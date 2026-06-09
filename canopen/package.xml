@@ -16,6 +16,8 @@
   <exec_depend>canopen_proxy_driver</exec_depend>
   <exec_depend>canopen_base_driver</exec_depend>
   <exec_depend>canopen_402_driver</exec_depend>
+  <exec_depend>canopen_408_driver</exec_depend>
+  <exec_depend>canopen_410_driver</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

@@ -1,0 +1,48 @@
+options:
+  dcf_path: "@BUS_CONFIG_PATH@"
+
+master:
+  node_id: 1
+  driver: "ros2_canopen::MasterDriver"
+  package: "canopen_master_driver"
+  sync_period: 10000
+
+defaults:
+  # NOTE: replace this with the vendor-supplied EDS for your specific inclinometer.
+  dcf: "cia410_slave.eds"
+  driver: "ros2_canopen::Cia410Driver"
+  package: "canopen_410_driver"
+  period: 10
+  boot_timeout_ms: 1000
+
+  # Optional one-shot SDOs at boot. CiA 410 devices typically need no init writes,
+  # but some allow operating-parameter tweaks (filter cutoff, axis-reverse, etc).
+  # sdo:
+  #   - {index: 0x6020, sub_index: 0, value: 0x00}  # slope long operating parameter
+  #   - {index: 0x6120, sub_index: 0, value: 0x00}  # slope lateral operating parameter
+
+  tpdo:
+    # The slave pushes the two slope angles via TPDO1. Sync-cyclic at 10ms (per master sync_period).
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0x01
+      mapping:
+        - {index: 0x6010, sub_index: 0}  # slope long 32-bit (radians via deg_per_lsb conversion in driver)
+        - {index: 0x6110, sub_index: 0}  # slope lateral 32-bit
+    2: {enabled: false}
+    3: {enabled: false}
+    4: {enabled: false}
+
+  # CiA 410 is mostly read-only; no RPDOs required.
+  rpdo:
+    1: {enabled: false}
+    2: {enabled: false}
+
+nodes:
+  inclinometer_1:
+    node_id: 2
+    # frame_id: "inclinometer_link"
+    # deg_per_lsb: 0.01           # used as fallback if device omits 0x6200
+    # has_lateral_axis: true
+    # orientation_stddev: 0.001   # radians; omit to publish covariance as unknown
