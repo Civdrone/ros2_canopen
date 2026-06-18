@@ -53,14 +53,15 @@ inclinometer_sensor:
     offset_bits: 16
 
   # ---- TPDO mapping ----------------------------------------------------------
-  # Device default is async (0xFE) on TPDO1, mapping (0x6010, 0x6020). We
-  # override transmission to sync-cyclic (0x01) so the ROS publish loop has
-  # predictable timing aligned with the master SYNC.
-  tpdo:
-    1:
-      enabled: true
-      cob_id: "auto"
-      transmission: 0x01
-      mapping:
-        - {index: 0x6010, sub_index: 0}    # slope longitudinal (INTEGER16)
-        - {index: 0x6020, sub_index: 0}    # slope lateral (INTEGER16)
+  # Intentionally omitted: the DST X720 marks 0x1800:1 (COB-ID) as read-only,
+  # so any tpdo override here forces the master to disable-then-re-enable the
+  # PDO via SDO writes to 0x1800:1, which the device rejects → boot fails with
+  # "Configuration download failed".
+  #
+  # The device's factory TPDO1 config is already what we want:
+  #   * COB-ID: 0x180 + node_id (= 0x1FF for node 127)
+  #   * Transmission: 0xFE (async, event-driven)
+  #   * Event timer: 100 ms
+  #   * Mapping: 0x6010 (slope long, 16-bit) + 0x6020 (slope lateral, 16-bit)
+  # The master picks up incoming frames automatically and updates the local OD
+  # cache that the Cia410Driver reads from.

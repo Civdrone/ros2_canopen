@@ -240,7 +240,7 @@ DefaultValue=$NODEID+0x580
 PDOMapping=0
 
 [1800]
-SubNumber=6
+SubNumber=4
 ParameterName=Transmit PDO Communication Parameter 1
 ObjectType=0x09
 
@@ -256,7 +256,7 @@ PDOMapping=0
 ParameterName=COB-ID
 ObjectType=0x07
 DataType=0x0007
-AccessType=rw
+AccessType=ro
 DefaultValue=$NODEID+0x180
 PDOMapping=0
 
@@ -266,22 +266,6 @@ ObjectType=0x07
 DataType=0x0005
 AccessType=rw
 DefaultValue=0xFE
-PDOMapping=0
-
-[1800sub3]
-ParameterName=Inhibit Time
-ObjectType=0x07
-DataType=0x0006
-AccessType=rw
-DefaultValue=0x0000
-PDOMapping=0
-
-[1800sub4]
-ParameterName=Compatibility Entry
-ObjectType=0x07
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x00
 PDOMapping=0
 
 [1800sub5]

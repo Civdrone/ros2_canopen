@@ -31,6 +31,9 @@ inline void NodeCanopen410Driver<rclcpp::Node>::init(bool /*called_from_base*/)
 {
   NodeCanopenProxyDriver<rclcpp::Node>::init(false);
   imu_publisher_ = this->node_->template create_publisher<sensor_msgs::msg::Imu>("~/imu", 10);
+  inclination_publisher_ =
+    this->node_->template create_publisher<geometry_msgs::msg::Vector3Stamped>(
+      "~/inclination", 10);
 }
 
 template <>
@@ -39,6 +42,9 @@ inline void NodeCanopen410Driver<rclcpp_lifecycle::LifecycleNode>::init(bool /*c
   NodeCanopenProxyDriver<rclcpp_lifecycle::LifecycleNode>::init(false);
   imu_publisher_ =
     this->node_->template create_publisher<sensor_msgs::msg::Imu>("~/imu", 10);
+  inclination_publisher_ =
+    this->node_->template create_publisher<geometry_msgs::msg::Vector3Stamped>(
+      "~/inclination", 10);
 }
 
 template <class NODETYPE>
@@ -201,18 +207,35 @@ void NodeCanopen410Driver<NODETYPE>::publish()
   // "lateral" is around the lateral axis (typically roll). Yaw is not measured.
   const double pitch = inclinometer_->get_long_rad();
   const double roll = has_lateral_axis_ ? inclinometer_->get_lateral_rad() : 0.0;
+  const auto stamp = this->node_->now();
 
+  // ~/inclination — plain roll/pitch in radians.
+  geometry_msgs::msg::Vector3Stamped incl_msg;
+  incl_msg.header.stamp = stamp;
+  incl_msg.header.frame_id = frame_id_;
+  incl_msg.vector.x = roll;
+  incl_msg.vector.y = pitch;
+  incl_msg.vector.z = 0.0;
+  inclination_publisher_->publish(incl_msg);
+
+  // ~/imu — same orientation as a quaternion.
   tf2::Quaternion q;
   q.setRPY(roll, pitch, 0.0);
 
   sensor_msgs::msg::Imu msg;
-  msg.header.stamp = this->node_->now();
+  msg.header.stamp = stamp;
   msg.header.frame_id = frame_id_;
   msg.orientation.x = q.x();
   msg.orientation.y = q.y();
   msg.orientation.z = q.z();
   msg.orientation.w = q.w();
 
+  // sensor_msgs/Imu / REP 145 semantics:
+  //   * covariance[0] == -1.0   →  "this quantity is not produced by the sensor"
+  //   * covariance all zeros    →  "value is valid, variance unknown"
+  //   * filled diagonal         →  "value valid with this variance"
+  // An inclinometer produces orientation but NOT angular velocity / linear
+  // acceleration, so the -1 sentinel belongs on the latter two, not orientation.
   if (orientation_stddev_ > 0.0)
   {
     const double var = orientation_stddev_ * orientation_stddev_;
@@ -220,11 +243,8 @@ void NodeCanopen410Driver<NODETYPE>::publish()
     msg.orientation_covariance[4] = var;
     msg.orientation_covariance[8] = var;
   }
-  else
-  {
-    // -1 on element 0 signals "covariance unknown" per sensor_msgs/Imu convention.
-    msg.orientation_covariance[0] = -1.0;
-  }
+  // else: leave orientation_covariance as zero-initialized = "variance unknown".
+
   msg.angular_velocity_covariance[0] = -1.0;
   msg.linear_acceleration_covariance[0] = -1.0;
 

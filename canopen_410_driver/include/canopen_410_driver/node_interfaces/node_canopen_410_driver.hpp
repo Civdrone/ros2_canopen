@@ -8,6 +8,7 @@
 #include "canopen_410_driver/inclinometer.hpp"
 #include "canopen_base_driver/lely_driver_bridge.hpp"
 #include "canopen_proxy_driver/node_interfaces/node_canopen_proxy_driver.hpp"
+#include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_srvs/srv/trigger.hpp"
 
@@ -28,6 +29,7 @@ protected:
   std::shared_ptr<Inclinometer410> inclinometer_;
 
   rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_publisher_;
+  rclcpp::Publisher<geometry_msgs::msg::Vector3Stamped>::SharedPtr inclination_publisher_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr zero_long_service_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr zero_lateral_service_;
 
