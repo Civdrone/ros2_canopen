@@ -38,6 +38,9 @@ protected:
   // -1.0 sentinel on element [0], the published Imu marks orientation as unknown.
   double orientation_stddev_;
 
+  // OD index map (defaults to standard CiA 410; overridable per-device in YAML).
+  Cia410RegisterMap register_map_;
+
   void configure_common();
   void publish();
   void poll_timer_callback() override;

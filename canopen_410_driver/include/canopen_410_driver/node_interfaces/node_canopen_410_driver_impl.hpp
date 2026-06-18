@@ -75,6 +75,50 @@ void NodeCanopen410Driver<NODETYPE>::configure_common()
   {
   }
 
+  // register_map: block — override any subset of OD indices / widths.
+  // Defaults match the CiA 410 standard. Devices like Posital DST X720 use
+  // a different layout (lateral axis at 0x6020, 16-bit slopes, resolution
+  // at 0x6000) and override here.
+  try
+  {
+    auto rm = this->config_["register_map"];
+    if (rm.IsDefined() && rm.IsMap())
+    {
+      auto pick_u16 = [&rm](const char * key, uint16_t & out) {
+        try
+        {
+          out = static_cast<uint16_t>(rm[key].template as<int>());
+        }
+        catch (...)
+        {
+        }
+      };
+      auto pick_u8 = [&rm](const char * key, uint8_t & out) {
+        try
+        {
+          out = static_cast<uint8_t>(rm[key].template as<int>());
+        }
+        catch (...)
+        {
+        }
+      };
+      pick_u16("slope_long_index", register_map_.slope_long_index);
+      pick_u8("slope_long_bits", register_map_.slope_long_bits);
+      pick_u16("slope_lateral_index", register_map_.slope_lateral_index);
+      pick_u8("slope_lateral_bits", register_map_.slope_lateral_bits);
+      pick_u16("resolution_index", register_map_.resolution_index);
+      pick_u16("slope_long_preset_index", register_map_.slope_long_preset_index);
+      pick_u16("slope_lateral_preset_index", register_map_.slope_lateral_preset_index);
+      pick_u16("slope_long_offset_index", register_map_.slope_long_offset_index);
+      pick_u16("slope_lateral_offset_index", register_map_.slope_lateral_offset_index);
+      pick_u8("preset_bits", register_map_.preset_bits);
+      pick_u8("offset_bits", register_map_.offset_bits);
+    }
+  }
+  catch (...)
+  {
+  }
+
   zero_long_service_ = this->node_->template create_service<std_srvs::srv::Trigger>(
     std::string(this->node_->get_name()) + "/zero_long",
     [this](
@@ -93,8 +137,12 @@ void NodeCanopen410Driver<NODETYPE>::configure_common()
 
   RCLCPP_INFO(
     this->node_->get_logger(),
-    "CiA 410 driver configured. frame_id=%s, deg_per_lsb_fallback=%f, has_lateral=%s",
-    frame_id_.c_str(), deg_per_lsb_fallback_, has_lateral_axis_ ? "yes" : "no");
+    "CiA 410 driver configured. frame_id=%s, deg_per_lsb_fallback=%f, has_lateral=%s, "
+    "slope_long=0x%04X/%u-bit, slope_lateral=0x%04X/%u-bit, resolution=0x%04X",
+    frame_id_.c_str(), deg_per_lsb_fallback_, has_lateral_axis_ ? "yes" : "no",
+    register_map_.slope_long_index, register_map_.slope_long_bits,
+    register_map_.slope_lateral_index, register_map_.slope_lateral_bits,
+    register_map_.resolution_index);
 }
 
 template <>
@@ -133,7 +181,8 @@ template <class NODETYPE>
 void NodeCanopen410Driver<NODETYPE>::add_to_master()
 {
   NodeCanopenProxyDriver<NODETYPE>::add_to_master();
-  inclinometer_ = std::make_shared<Inclinometer410>(this->lely_driver_, deg_per_lsb_fallback_);
+  inclinometer_ =
+    std::make_shared<Inclinometer410>(this->lely_driver_, register_map_, deg_per_lsb_fallback_);
 }
 
 template <class NODETYPE>

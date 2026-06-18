@@ -18,7 +18,6 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
 
 add_library(node_canopen_cia410_driver
   src/node_interfaces/node_canopen_410_driver.cpp
@@ -32,10 +31,8 @@ target_link_libraries(node_canopen_cia410_driver PUBLIC
   ${canopen_interfaces_TARGETS}
   ${geometry_msgs_TARGETS}
   ${sensor_msgs_TARGETS}
-  ${std_srvs_TARGETS}
   canopen_proxy_driver::node_canopen_proxy_driver
   tf2::tf2
-  tf2_geometry_msgs::tf2_geometry_msgs
 )
 
 add_library(lifecycle_cia410_driver
@@ -110,7 +107,6 @@ ament_export_dependencies(
   sensor_msgs
   std_srvs
   tf2
-  tf2_geometry_msgs
 )
 
 ament_package()
