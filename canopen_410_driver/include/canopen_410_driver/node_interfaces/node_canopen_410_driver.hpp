@@ -34,6 +34,8 @@ protected:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr zero_lateral_service_;
 
   std::string frame_id_;
+  std::string imu_topic_;
+  std::string inclination_topic_;
   double deg_per_lsb_fallback_;
   bool has_lateral_axis_;
   // Configurable orientation covariance (3x3 row-major). If left as the default

@@ -26,10 +26,12 @@ inclinometer_sensor:
   polling: false
 
   # ---- Cia410Driver knobs ----------------------------------------------------
+  frame_id: "inclinometer_link"           # used in published msg.header.frame_id
+  imu_topic: "~/imu"                      # sensor_msgs/Imu output
+  inclination_topic: "~/inclination"      # geometry_msgs/Vector3Stamped (x=roll, y=pitch, radians)
   has_lateral_axis: true
-  deg_per_lsb: 0.05            # device default: 0x6000 = 50 → 0.05° per LSB
-  # frame_id: "inclinometer_link"
-  # orientation_stddev: 0.005
+  deg_per_lsb: 0.05                       # device default: 0x6000 = 50 → 0.05° per LSB
+  # orientation_stddev: 0.005             # radians; omit for unknown covariance
 
   # ---- Register map override (Posital DST X720 layout) -----------------------
   # The DST X720 deviates from the CiA 410 standard:
