@@ -112,7 +112,6 @@ void NodeCanopen410Driver<NODETYPE>::configure_common()
       pick_u8("slope_long_bits", register_map_.slope_long_bits);
       pick_u16("slope_lateral_index", register_map_.slope_lateral_index);
       pick_u8("slope_lateral_bits", register_map_.slope_lateral_bits);
-      pick_u16("resolution_index", register_map_.resolution_index);
       pick_u16("slope_long_preset_index", register_map_.slope_long_preset_index);
       pick_u16("slope_lateral_preset_index", register_map_.slope_lateral_preset_index);
       pick_u16("slope_long_offset_index", register_map_.slope_long_offset_index);
@@ -143,12 +142,11 @@ void NodeCanopen410Driver<NODETYPE>::configure_common()
 
   RCLCPP_INFO(
     this->node_->get_logger(),
-    "CiA 410 driver configured. frame_id=%s, deg_per_lsb_fallback=%f, has_lateral=%s, "
-    "slope_long=0x%04X/%u-bit, slope_lateral=0x%04X/%u-bit, resolution=0x%04X",
+    "CiA 410 driver configured. frame_id=%s, deg_per_lsb=%f, has_lateral=%s, "
+    "slope_long=0x%04X/%u-bit, slope_lateral=0x%04X/%u-bit",
     frame_id_.c_str(), deg_per_lsb_fallback_, has_lateral_axis_ ? "yes" : "no",
     register_map_.slope_long_index, register_map_.slope_long_bits,
-    register_map_.slope_lateral_index, register_map_.slope_lateral_bits,
-    register_map_.resolution_index);
+    register_map_.slope_lateral_index, register_map_.slope_lateral_bits);
 }
 
 template <>
@@ -169,10 +167,9 @@ void NodeCanopen410Driver<NODETYPE>::activate(bool /*called_from_base*/)
   NodeCanopenProxyDriver<NODETYPE>::activate(false);
   if (inclinometer_)
   {
-    inclinometer_->refresh_resolution();
     RCLCPP_INFO(
       this->node_->get_logger(),
-      "Inclinometer resolution: %f deg/LSB", inclinometer_->deg_per_lsb());
+      "Inclinometer resolution: %f deg/LSB (from YAML)", inclinometer_->deg_per_lsb());
   }
 }
 

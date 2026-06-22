@@ -32,9 +32,6 @@ struct Cia410RegisterMap
   uint16_t slope_lateral_index = 0x6110;
   uint8_t slope_lateral_bits = 32;         // 16 or 32
 
-  // Resolution object (LSB-per-degree). 0 = use YAML deg_per_lsb fallback.
-  uint16_t resolution_index = 0x6200;
-
   // Preset (zero-set) objects. 0 = service is disabled.
   uint16_t slope_long_preset_index = 0x6030;
   uint16_t slope_lateral_preset_index = 0x6130;
@@ -56,45 +53,21 @@ struct Cia410RegisterMap
  * incoming TPDOs from the slave). Writes presets/offsets via SDO. Conversion to
  * radians is done here so the node interface can publish strongly-typed messages.
  *
- * Resolution handling: when the device publishes its resolution object, we read
- * it during activate() and compute deg_per_lsb = 1 / resolution. Otherwise the
- * YAML-configured fallback is used.
+ * Resolution: degrees-per-LSB is provided via YAML (`deg_per_lsb`). Vendors
+ * disagree on the formula for any auto-detect register (CiA standard 0x6200
+ * uses 1/value while Posital's 0x6000 uses value/1000), so the driver does not
+ * try to derive it at runtime — the YAML value is authoritative.
  */
 class Inclinometer410
 {
 public:
   Inclinometer410(
     std::shared_ptr<LelyDriverBridge> driver, Cia410RegisterMap registers,
-    double deg_per_lsb_fallback = 0.01)
+    double deg_per_lsb)
   : driver_(std::move(driver)),
     registers_(registers),
-    deg_per_lsb_(deg_per_lsb_fallback)
+    deg_per_lsb_(deg_per_lsb)
   {
-  }
-
-  /// Try to read the resolution object to derive degrees-per-LSB.
-  void refresh_resolution()
-  {
-    if (!driver_ || registers_.resolution_index == 0) return;
-    try
-    {
-      if (driver_->has_object(registers_.resolution_index, 0))
-      {
-        const auto resolution =
-          driver_->universal_get_value<uint16_t>(registers_.resolution_index, 0);
-        if (resolution > 0)
-        {
-          deg_per_lsb_ = 1.0 / static_cast<double>(resolution);
-        }
-      }
-    }
-    catch (const std::exception & e)
-    {
-      RCLCPP_WARN(
-        rclcpp::get_logger("inclinometer_410"),
-        "Could not read resolution object 0x%04X (%s); using fallback %f deg/LSB",
-        registers_.resolution_index, e.what(), deg_per_lsb_);
-    }
   }
 
   double get_long_rad() const

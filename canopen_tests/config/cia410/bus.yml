@@ -35,16 +35,17 @@ inclinometer_sensor:
   # The DST X720 deviates from the CiA 410 standard:
   #   * lateral axis sits at 0x6020 (standard is 0x6110)
   #   * slope values are SIGNED 16-bit (standard 0x60x0 slot is INTEGER32)
-  #   * resolution is at 0x6000 (standard is 0x6200)
   #   * preset/offset use 0x6012-0x6024 (standard 0x6030/0x6040 etc.)
   # See manual AQ304229657414en-000101. Remove this block if migrating to a
   # standard CiA 410 device.
+  #
+  # Resolution is set explicitly via `deg_per_lsb` above (the driver does not
+  # auto-detect — vendors disagree on the formula).
   register_map:
     slope_long_index: 0x6010
     slope_long_bits: 16
     slope_lateral_index: 0x6020
     slope_lateral_bits: 16
-    resolution_index: 0x6000
     slope_long_preset_index: 0x6012
     slope_lateral_preset_index: 0x6022
     slope_long_offset_index: 0x6014       # "differential offset" on this device
