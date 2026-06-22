@@ -14,6 +14,8 @@ template <class NODETYPE>
 NodeCanopen410Driver<NODETYPE>::NodeCanopen410Driver(NODETYPE * node)
 : NodeCanopenProxyDriver<NODETYPE>(node),
   frame_id_("inclinometer"),
+  imu_topic_("~/imu"),
+  inclination_topic_("~/inclination"),
   deg_per_lsb_fallback_(0.01),
   has_lateral_axis_(true),
   orientation_stddev_(-1.0)
@@ -30,21 +32,16 @@ template <>
 inline void NodeCanopen410Driver<rclcpp::Node>::init(bool /*called_from_base*/)
 {
   NodeCanopenProxyDriver<rclcpp::Node>::init(false);
-  imu_publisher_ = this->node_->template create_publisher<sensor_msgs::msg::Imu>("~/imu", 10);
-  inclination_publisher_ =
-    this->node_->template create_publisher<geometry_msgs::msg::Vector3Stamped>(
-      "~/inclination", 10);
+  // Publishers are created in configure_common() once YAML topic-name overrides
+  // are known.
 }
 
 template <>
 inline void NodeCanopen410Driver<rclcpp_lifecycle::LifecycleNode>::init(bool /*called_from_base*/)
 {
   NodeCanopenProxyDriver<rclcpp_lifecycle::LifecycleNode>::init(false);
-  imu_publisher_ =
-    this->node_->template create_publisher<sensor_msgs::msg::Imu>("~/imu", 10);
-  inclination_publisher_ =
-    this->node_->template create_publisher<geometry_msgs::msg::Vector3Stamped>(
-      "~/inclination", 10);
+  // Publishers are created in configure_common() once YAML topic-name overrides
+  // are known.
 }
 
 template <class NODETYPE>
@@ -55,6 +52,20 @@ void NodeCanopen410Driver<NODETYPE>::configure_common()
   try
   {
     frame_id_ = this->config_["frame_id"].template as<std::string>();
+  }
+  catch (...)
+  {
+  }
+  try
+  {
+    imu_topic_ = this->config_["imu_topic"].template as<std::string>();
+  }
+  catch (...)
+  {
+  }
+  try
+  {
+    inclination_topic_ = this->config_["inclination_topic"].template as<std::string>();
   }
   catch (...)
   {
@@ -124,6 +135,12 @@ void NodeCanopen410Driver<NODETYPE>::configure_common()
   {
   }
 
+  imu_publisher_ =
+    this->node_->template create_publisher<sensor_msgs::msg::Imu>(imu_topic_, 10);
+  inclination_publisher_ =
+    this->node_->template create_publisher<geometry_msgs::msg::Vector3Stamped>(
+      inclination_topic_, 10);
+
   zero_long_service_ = this->node_->template create_service<std_srvs::srv::Trigger>(
     std::string(this->node_->get_name()) + "/zero_long",
     [this](
@@ -142,9 +159,10 @@ void NodeCanopen410Driver<NODETYPE>::configure_common()
 
   RCLCPP_INFO(
     this->node_->get_logger(),
-    "CiA 410 driver configured. frame_id=%s, deg_per_lsb=%f, has_lateral=%s, "
-    "slope_long=0x%04X/%u-bit, slope_lateral=0x%04X/%u-bit",
-    frame_id_.c_str(), deg_per_lsb_fallback_, has_lateral_axis_ ? "yes" : "no",
+    "CiA 410 driver configured. frame_id=%s, imu_topic=%s, inclination_topic=%s, "
+    "deg_per_lsb=%f, has_lateral=%s, slope_long=0x%04X/%u-bit, slope_lateral=0x%04X/%u-bit",
+    frame_id_.c_str(), imu_topic_.c_str(), inclination_topic_.c_str(), deg_per_lsb_fallback_,
+    has_lateral_axis_ ? "yes" : "no",
     register_map_.slope_long_index, register_map_.slope_long_bits,
     register_map_.slope_lateral_index, register_map_.slope_lateral_bits);
 }
