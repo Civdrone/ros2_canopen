@@ -1,0 +1,63 @@
+options:
+  dcf_path: "@BUS_CONFIG_PATH@"
+
+master:
+  node_id: 1
+  driver: "ros2_canopen::MasterDriver"
+  package: "canopen_master_driver"
+  sync_period: 10000
+
+defaults:
+  # NOTE: replace with the Danfoss-supplied EDS (PVED-CL / PVED-CLS / PVG-32 EX / Plus+1).
+  dcf: "cia408_slave.eds"
+  driver: "ros2_canopen::Cia408Driver"
+  package: "canopen_408_driver"
+  period: 10
+  boot_timeout_ms: 1000
+
+  # One-shot SDOs at boot — typical Danfoss devices need:
+  #   * heartbeat producer time (0x1017) set, default is OFF on Danfoss
+  #   * device mode (0x6042) set to the desired mode (2 = Position)
+  #   * vendor-specific calibration / curve writes (range 0x2000–0x5FFF, EDS-dependent)
+  sdo:
+    - {index: 0x1017, sub_index: 0, value: 500}    # heartbeat 500 ms
+    - {index: 0x6042, sub_index: 0, value: 2}      # device mode = position
+    # - {index: 0x2xxx, sub_index: ?, value: ?}    # vendor-specific (fill from EDS)
+
+  tpdo:
+    # Statusword + mode display + actual feedback
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0x01
+      mapping:
+        - {index: 0x6041, sub_index: 0}  # statusword
+        - {index: 0x6043, sub_index: 0}  # device mode display
+    2:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0x01
+      mapping:
+        - {index: 0x6301, sub_index: 0}  # actual value
+
+  rpdo:
+    # Controlword + target value (position-mode setpoint)
+    1:
+      enabled: true
+      cob_id: "auto"
+      mapping:
+        - {index: 0x6040, sub_index: 0}  # controlword
+    2:
+      enabled: true
+      cob_id: "auto"
+      mapping:
+        - {index: 0x6300, sub_index: 0}  # target value
+
+nodes:
+  hydraulic_axis_1:
+    node_id: 2
+    # scale_target_to_dev: 1000.0        # double → raw int32 multiplier
+    # scale_actual_from_dev: 0.001       # raw int32 → double multiplier
+    # offset: 0.0
+    # default_mode: 2                    # 1=Manual, 2=Position, 3=Pressure, 4=Flow, 5=Speed
+    # init_timeout_ms: 5000

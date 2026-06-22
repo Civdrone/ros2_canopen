@@ -1,0 +1,54 @@
+options:
+  dcf_path: "/data/ros2_canopen"
+  interface: "canE"
+  non_blocking_mode: true
+
+master:
+  node_id: 1
+  baudrate: 250
+  driver: "ros2_canopen::MasterDriver"
+  package: "canopen_master_driver"
+  sync_period: 10000
+
+inclinometer_sensor:
+  node_id: 127
+  dcf: "DST_X720.eds"
+  driver: "ros2_canopen::Cia410Driver"
+  package: "canopen_410_driver"
+  vendor_id: 0
+  product_code: 0
+  boot: true
+  mandatory: false
+  polling: false
+
+  # --- Cia410Driver knobs (all optional) -------------------------------------
+  # frame_id: "inclinometer_link"   # default "inclinometer"
+  # deg_per_lsb: 0.01               # fallback if device doesn't publish 0x6200
+  # has_lateral_axis: true          # set false for single-axis variants
+  # orientation_stddev: 0.005       # radians; omit to publish covariance as "unknown"
+
+  # --- TPDO mappings ---------------------------------------------------------
+  # The driver reads slope values from the local OD cache populated by these
+  # TPDOs. Verify the indices against DST_X720.eds:
+  #   * Some DST X-series devices ship the 32-bit slopes at 0x6010 / 0x6110.
+  #   * Others only implement the 16-bit slopes at 0x6000 / 0x6100.
+  # The driver tries 0x6010/0x6110 first, then falls back to 0x6000/0x6100, so
+  # mapping whichever the device actually exposes is what matters.
+  tpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0x01            # sync-cyclic, every SYNC
+      mapping:
+        - {index: 0x6010, sub_index: 0}    # slope long (32-bit) — change to 0x6000 if EDS only has 16-bit
+        - {index: 0x6110, sub_index: 0}    # slope lateral (32-bit) — change to 0x6100 if EDS only has 16-bit
+    2: {enabled: false}
+    3: {enabled: false}
+    4: {enabled: false}
+
+  # CiA 410 is read-only; no RPDOs.
+  rpdo:
+    1: {enabled: false}
+    2: {enabled: false}
+    3: {enabled: false}
+    4: {enabled: false}

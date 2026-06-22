@@ -1,0 +1,68 @@
+# NOTE: this file lives in canopen_tests as a reference template. On the target
+# device, deploy a copy to /data/ros2_canopen/bus.yml with `dcf_path` set to the
+# absolute path on that device (not the @BUS_CONFIG_PATH@ placeholder, which is
+# only substituted by canopen_tests' cogen_dcf cmake macro).
+options:
+  dcf_path: "/data/ros2_canopen"
+  interface: "canE"
+  non_blocking_mode: true
+
+master:
+  node_id: 1
+  baudrate: 250
+  driver: "ros2_canopen::MasterDriver"
+  package: "canopen_master_driver"
+  sync_period: 10000
+
+inclinometer_sensor:
+  node_id: 127
+  dcf: "DST_X720.eds"
+  driver: "ros2_canopen::Cia410Driver"
+  package: "canopen_410_driver"
+  vendor_id: 0x00000093
+  product_code: 0x00000064
+  boot: true
+  mandatory: false
+  polling: false
+
+  # ---- Cia410Driver knobs ----------------------------------------------------
+  has_lateral_axis: true
+  deg_per_lsb: 0.05            # device default: 0x6000 = 50 → 0.05° per LSB
+  # frame_id: "inclinometer_link"
+  # orientation_stddev: 0.005
+
+  # ---- Register map override (Posital DST X720 layout) -----------------------
+  # The DST X720 deviates from the CiA 410 standard:
+  #   * lateral axis sits at 0x6020 (standard is 0x6110)
+  #   * slope values are SIGNED 16-bit (standard 0x60x0 slot is INTEGER32)
+  #   * preset/offset use 0x6012-0x6024 (standard 0x6030/0x6040 etc.)
+  # See manual AQ304229657414en-000101. Remove this block if migrating to a
+  # standard CiA 410 device.
+  #
+  # Resolution is set explicitly via `deg_per_lsb` above (the driver does not
+  # auto-detect — vendors disagree on the formula).
+  register_map:
+    slope_long_index: 0x6010
+    slope_long_bits: 16
+    slope_lateral_index: 0x6020
+    slope_lateral_bits: 16
+    slope_long_preset_index: 0x6012
+    slope_lateral_preset_index: 0x6022
+    slope_long_offset_index: 0x6014       # "differential offset" on this device
+    slope_lateral_offset_index: 0x6024
+    preset_bits: 16
+    offset_bits: 16
+
+  # ---- TPDO mapping ----------------------------------------------------------
+  # Intentionally omitted: the DST X720 marks 0x1800:1 (COB-ID) as read-only,
+  # so any tpdo override here forces the master to disable-then-re-enable the
+  # PDO via SDO writes to 0x1800:1, which the device rejects → boot fails with
+  # "Configuration download failed".
+  #
+  # The device's factory TPDO1 config is already what we want:
+  #   * COB-ID: 0x180 + node_id (= 0x1FF for node 127)
+  #   * Transmission: 0xFE (async, event-driven)
+  #   * Event timer: 100 ms
+  #   * Mapping: 0x6010 (slope long, 16-bit) + 0x6020 (slope lateral, 16-bit)
+  # The master picks up incoming frames automatically and updates the local OD
+  # cache that the Cia410Driver reads from.

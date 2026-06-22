@@ -1,0 +1,471 @@
+[FileInfo]
+FileName=DST_X720.eds
+FileVersion=0x01
+FileRevision=0x01
+EDSVersion=4.0
+Description=Danfoss DST X720 Mid-level inclination sensor (CiA 410 profile)
+CreationTime=12:00PM
+CreationDate=06-18-2026
+CreatedBy=ros2_canopen
+ModificationTime=12:00PM
+ModificationDate=06-18-2026
+ModifiedBy=ros2_canopen
+
+[DeviceInfo]
+VendorName=Posital/Danfoss
+VendorNumber=0x00000093
+ProductName=DST X720
+ProductNumber=0x00000064
+RevisionNumber=0x00000001
+OrderCode=AQ304229657414
+BaudRate_10=0
+BaudRate_20=1
+BaudRate_50=1
+BaudRate_100=1
+BaudRate_125=1
+BaudRate_250=1
+BaudRate_500=1
+BaudRate_800=1
+BaudRate_1000=1
+SimpleBootUpMaster=0
+SimpleBootUpSlave=1
+Granularity=8
+DynamicChannelsSupported=0
+GroupMessaging=0
+NrOfRXPDO=0
+NrOfTXPDO=1
+LSS_Supported=0
+
+[DummyUsage]
+Dummy0001=0
+Dummy0002=1
+Dummy0003=1
+Dummy0004=1
+Dummy0005=1
+Dummy0006=1
+Dummy0007=1
+
+[Comments]
+Lines=0
+
+[MandatoryObjects]
+SupportedObjects=3
+1=0x1000
+2=0x1001
+3=0x1018
+
+[1000]
+ParameterName=Device Type
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x0008019A
+PDOMapping=0
+
+[1001]
+ParameterName=Error Register
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x00
+PDOMapping=0
+
+[1018]
+SubNumber=5
+ParameterName=Identity Object
+ObjectType=0x09
+
+[1018sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x04
+PDOMapping=0
+
+[1018sub1]
+ParameterName=Vendor ID
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000093
+PDOMapping=0
+
+[1018sub2]
+ParameterName=Product Code
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000064
+PDOMapping=0
+
+[1018sub3]
+ParameterName=Revision Number
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000001
+PDOMapping=0
+
+[1018sub4]
+ParameterName=Serial Number
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000000
+PDOMapping=0
+
+[OptionalObjects]
+SupportedObjects=10
+1=0x1008
+2=0x1009
+3=0x100A
+4=0x1010
+5=0x1011
+6=0x1014
+7=0x1017
+8=0x1200
+9=0x1800
+10=0x1A00
+
+[1008]
+ParameterName=Manufacturer Device Name
+ObjectType=0x07
+DataType=0x0009
+AccessType=const
+DefaultValue=GIB
+PDOMapping=0
+
+[1009]
+ParameterName=Manufacturer Hardware Version
+ObjectType=0x07
+DataType=0x0009
+AccessType=const
+DefaultValue=1.00
+PDOMapping=0
+
+[100A]
+ParameterName=Manufacturer Software Version
+ObjectType=0x07
+DataType=0x0009
+AccessType=const
+DefaultValue=1.24
+PDOMapping=0
+
+[1010]
+SubNumber=2
+ParameterName=Store Parameters
+ObjectType=0x08
+
+[1010sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x01
+PDOMapping=0
+
+[1010sub1]
+ParameterName=Save all Parameters
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000000
+PDOMapping=0
+
+[1011]
+SubNumber=2
+ParameterName=Restore Default Parameters
+ObjectType=0x08
+
+[1011sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x01
+PDOMapping=0
+
+[1011sub1]
+ParameterName=Restore all Default Parameters
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000000
+PDOMapping=0
+
+[1014]
+ParameterName=COB-ID Emergency
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=$NODEID+0x80
+PDOMapping=0
+
+[1017]
+ParameterName=Producer Heartbeat Time
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=0
+
+[1200]
+SubNumber=3
+ParameterName=SDO Server Parameter
+ObjectType=0x09
+
+[1200sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x02
+PDOMapping=0
+
+[1200sub1]
+ParameterName=COB-ID Client to Server (Receive SDO)
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=$NODEID+0x600
+PDOMapping=0
+
+[1200sub2]
+ParameterName=COB-ID Server to Client (Transmit SDO)
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=$NODEID+0x580
+PDOMapping=0
+
+[1800]
+SubNumber=4
+ParameterName=Transmit PDO Communication Parameter 1
+ObjectType=0x09
+
+[1800sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x05
+PDOMapping=0
+
+[1800sub1]
+ParameterName=COB-ID
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=$NODEID+0x180
+PDOMapping=0
+
+[1800sub2]
+ParameterName=Transmission Type
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFE
+PDOMapping=0
+
+[1800sub5]
+ParameterName=Event Timer
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0064
+PDOMapping=0
+
+[1A00]
+SubNumber=3
+ParameterName=Transmit PDO Mapping Parameter 1
+ObjectType=0x09
+
+[1A00sub0]
+ParameterName=Number of mapped objects
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x02
+PDOMapping=0
+
+[1A00sub1]
+ParameterName=Mapping Entry 1
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x60100010
+PDOMapping=0
+
+[1A00sub2]
+ParameterName=Mapping Entry 2
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x60200010
+PDOMapping=0
+
+[ManufacturerObjects]
+SupportedObjects=18
+1=0x2001
+2=0x20F0
+3=0x20F1
+4=0x20F2
+5=0x20F3
+6=0x4000
+7=0x4001
+8=0x5000
+9=0x5001
+10=0x6000
+11=0x6010
+12=0x6011
+13=0x6012
+14=0x6013
+15=0x6014
+16=0x6020
+17=0x6021
+18=0x6022
+
+[2001]
+ParameterName=Filter Setting
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x00
+PDOMapping=0
+
+[20F0]
+ParameterName=Node-ID Setting 1
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x7F
+PDOMapping=0
+
+[20F1]
+ParameterName=Node-ID Setting 2
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x7F
+PDOMapping=0
+
+[20F2]
+ParameterName=Baud Rate Setting 1
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x03
+PDOMapping=0
+
+[20F3]
+ParameterName=Baud Rate Setting 2
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x03
+PDOMapping=0
+
+[4000]
+ParameterName=Error Behavior
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x01
+PDOMapping=0
+
+[4001]
+ParameterName=Error Code (manufacturer-specific)
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x00
+PDOMapping=0
+
+[5000]
+ParameterName=Automatic NMT Start after Power-On
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x00
+PDOMapping=0
+
+[5001]
+ParameterName=PDO Coding Used
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x01
+PDOMapping=0
+
+[6000]
+ParameterName=Resolution
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0032
+PDOMapping=0
+
+[6010]
+ParameterName=Slope Longitudinal
+ObjectType=0x07
+DataType=0x0003
+AccessType=ro
+DefaultValue=0x0000
+PDOMapping=1
+
+[6011]
+ParameterName=Slope Longitudinal Operating Parameter
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x00
+PDOMapping=0
+
+[6012]
+ParameterName=Slope Longitudinal Preset Value
+ObjectType=0x07
+DataType=0x0003
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=0
+
+[6013]
+ParameterName=Slope Longitudinal Offset
+ObjectType=0x07
+DataType=0x0006
+AccessType=ro
+DefaultValue=0x0000
+PDOMapping=0
+
+[6014]
+ParameterName=Slope Longitudinal Differential Offset
+ObjectType=0x07
+DataType=0x0003
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=0
+
+[6020]
+ParameterName=Slope Lateral
+ObjectType=0x07
+DataType=0x0003
+AccessType=ro
+DefaultValue=0x0000
+PDOMapping=1
+
+[6021]
+ParameterName=Slope Lateral Operating Parameter
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x00
+PDOMapping=0
+
+[6022]
+ParameterName=Slope Lateral Preset Value
+ObjectType=0x07
+DataType=0x0003
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=0

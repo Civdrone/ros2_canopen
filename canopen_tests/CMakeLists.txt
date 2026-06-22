@@ -21,9 +21,21 @@ generate_dcf(simple_lifecycle)
 cogen_dcf(simple_diagnostics)
 generate_dcf(robot_control)
 
+# CiA 408 / CiA 410 configs ship as reference templates. To enable end-to-end DCF
+# generation, drop the vendor EDS into config/cia408/ and config/cia410/, then
+# uncomment the appropriate macro below:
+#   cogen_dcf(cia408)
+#   cogen_dcf(cia410)
+
 install(DIRECTORY
   launch rviz urdf launch_tests
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(DIRECTORY
+  config/cia408
+  config/cia410
+  DESTINATION share/${PROJECT_NAME}/config
 )
 
 
