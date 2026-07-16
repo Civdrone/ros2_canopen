@@ -9,6 +9,7 @@
 #include "canopen_interfaces/srv/co_target_double.hpp"
 #include "canopen_proxy_driver/node_interfaces/node_canopen_proxy_driver.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/u_int16.hpp"
 #include "std_srvs/srv/trigger.hpp"
 
 namespace ros2_canopen
@@ -27,21 +28,27 @@ class NodeCanopen408Driver : public NodeCanopenProxyDriver<NODETYPE>
 protected:
   std::shared_ptr<HydraulicAxis408> axis_;
 
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr actual_publisher_;
+  // Telemetry publishers.
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr spool_position_publisher_;  // percent
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr demand_publisher_;          // percent
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr statusword_publisher_;
+  rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr temperature_publisher_;      // raw
 
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr init_service_;
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr halt_service_;
+  // Command services.
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr enable_service_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr disable_service_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr hold_service_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr recover_service_;
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr shutdown_service_;
-  rclcpp::Service<canopen_interfaces::srv::COTargetDouble>::SharedPtr target_service_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr float_service_;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_service_;
+  rclcpp::Service<canopen_interfaces::srv::COTargetDouble>::SharedPtr set_position_service_;
 
-  // Scale: target_raw = (engineering_target - offset) * scale_to_dev
-  //        engineering_actual = actual_raw * scale_from_dev + offset
+  // Scale: setpoint_raw = (position_percent - offset) * scale_to_dev
+  //        position_percent = actual_raw * scale_from_dev + offset
   double scale_to_dev_;
   double scale_from_dev_;
   double offset_;
-  uint8_t default_mode_;
-  int init_timeout_ms_;
+  int16_t float_setpoint_raw_;
 
   void configure_common();
   void publish();
@@ -56,12 +63,14 @@ public:
   void deactivate(bool called_from_base) override;
   void add_to_master() override;
 
-  bool init_axis();
-  bool halt_axis();
+  bool enable_axis();
+  bool disable_axis();
+  bool hold_axis();
   bool recover_axis();
-  bool shutdown_axis();
-  bool set_target(double engineering_target);
-  double get_actual() const;
+  bool float_axis();
+  bool save_axis();
+  bool set_position(double position_percent);
+  double get_spool_position() const;
 };
 
 }  // namespace node_interfaces

@@ -13,150 +13,120 @@
 namespace ros2_canopen
 {
 
-// CiA 408 device profile object dictionary indices.
-// References:
-//   * CiA DSP-408 "Device profile for fluid power technology – proportional valves and
-//     hydrostatic transmissions"
-//   * Danfoss-specific OD entries (typically 0x2000–0x5FFF) are NOT baked in here;
-//     wire them through bus.yml `sdo:` blocks until vendor EDS is in hand.
+// Object dictionary of the Danfoss PVED-CC Series 5 CANopen valve.
+// Source: technical information manual BC180386484705en-000802, cross-checked
+// against a live unit over SDO. See canopen_tests/config/cia408/PVE_CC.eds.
 //
-// The state machine objects (0x6040 / 0x6041) match CiA 402, by design: CiA 408
-// reuses the 402-style controlword/statusword. The mode and setpoint/feedback
-// pairs live at different indices than 402, however.
+// NOTE: this is a CiA 408 device (0x1000 = 0x0198) but it does NOT use the
+// CiA 402 controlword/statusword bit semantics. 0x6040 drives a VDMAPROP device
+// state machine via discrete command values (see ControlWord below), and the
+// set point / actual value are INTEGER16 living at sub-index 0x01 of a record.
 struct Cia408Register
 {
-  static constexpr uint16_t CONTROLWORD = 0x6040;
-  static constexpr uint16_t STATUSWORD = 0x6041;
-  static constexpr uint16_t DEVICE_MODE = 0x6042;
-  static constexpr uint16_t DEVICE_MODE_DISPLAY = 0x6043;
-  static constexpr uint16_t DEVICE_ERROR = 0x6044;
+  static constexpr uint16_t CONTROLWORD = 0x6040;       // Device control word (DSM commands)
+  static constexpr uint16_t STATUSWORD = 0x6041;        // Device status word
+  static constexpr uint16_t DEVICE_MODE = 0x6042;       // 0x01 CAN controlled, 0x02 hand operated
 
-  // Generic / position-mode profile entries (default mode for this driver).
-  static constexpr uint16_t TARGET_VALUE = 0x6300;       // Setpoint (interpreted by active mode)
-  static constexpr uint16_t ACTUAL_VALUE = 0x6301;       // Feedback (interpreted by active mode)
-  static constexpr uint16_t MIN_LIMIT = 0x6302;
-  static constexpr uint16_t MAX_LIMIT = 0x6303;
-  static constexpr uint16_t RAMP_UP = 0x6304;
-  static constexpr uint16_t RAMP_DOWN = 0x6305;
-  static constexpr uint16_t MANUAL_COMMAND = 0x6306;
+  static constexpr uint16_t SETPOINT = 0x6300;          // Vpoc set point (record)
+  static constexpr uint8_t SETPOINT_SUB = 0x01;         // int16, -16384..+16384 = -100%..+100%
+  static constexpr uint16_t ACTUAL = 0x6301;            // Vpoc actual value = spool position (record)
+  static constexpr uint8_t ACTUAL_SUB = 0x01;           // int16, -16384..+16384 = -100%..+100%
 
-  // Pressure-mode setpoint/feedback (unused by default driver; available for extension).
-  static constexpr uint16_t TARGET_PRESSURE = 0x6310;
-  static constexpr uint16_t ACTUAL_PRESSURE = 0x6311;
+  static constexpr uint16_t DEMAND = 0x6310;            // Demand value (int16)
+  static constexpr uint16_t PCB_TEMPERATURE = 0x3468;   // Current PCB temperature (uint16)
+  static constexpr uint16_t BATTERY_VOLTAGE = 0x3469;   // Battery voltage, 0.1 V/LSB (uint16)
 
-  // Flow-mode setpoint/feedback (unused by default driver; available for extension).
-  static constexpr uint16_t TARGET_FLOW = 0x6320;
-  static constexpr uint16_t ACTUAL_FLOW = 0x6321;
+  static constexpr uint16_t STORE_PARAMS = 0x1010;      // Save-to-EEPROM
+  static constexpr uint8_t STORE_SUB = 0x01;
 };
 
-// CiA 408 device mode enum (subset). Vendor-specific values may extend this.
-enum class Cia408Mode : uint8_t
+// Device state machine command values written to 0x6040 (VDMAPROP DSM).
+// Sequence to reach the running "Device_Mode_Active" state from boot:
+//   Init(0x08) -> Disabled(0x09) -> Hold(0x0B) -> Active(0x0F)
+enum ControlWord : uint16_t
 {
-  NoMode = 0,
-  Manual = 1,
-  Position = 2,
-  Pressure = 3,
-  Flow = 4,
-  Speed = 5,
+  CW_INIT = 0x08,         // D7: -> Init
+  CW_DISABLED = 0x09,     // D2/D6: -> Disabled
+  CW_HOLD = 0x0B,         // D3/D5/D11: -> Hold (spool held at neutral, not controlled)
+  CW_ACTIVE = 0x0F,       // D4: -> Device_Mode_Active (spool follows set point)
+  CW_FAULT_RESET = 0x03,  // D11: Fault_Hold -> Hold
 };
 
-// CiA 408 reuses the CiA 402 state machine.
-enum class HydraulicState : uint8_t
+enum DeviceMode : uint8_t
 {
-  NotReadyToSwitchOn = 0,
-  SwitchOnDisabled = 1,
-  ReadyToSwitchOn = 2,
-  SwitchedOn = 3,
-  OperationEnabled = 4,
-  QuickStopActive = 5,
-  FaultReactionActive = 6,
-  Fault = 7,
-  Unknown = 0xFF,
+  MODE_CAN_CONTROLLED = 0x01,
+  MODE_HAND_OPERATED = 0x02,
 };
+
+// Set point extremes.
+static constexpr int16_t SETPOINT_FULL_SCALE = 16384;   // = 100% spool travel
+static constexpr int16_t SETPOINT_FLOAT = 32767;        // request float state
+// Save-to-EEPROM signature: ASCII "save" (0x65766173), per manual.
+static constexpr uint32_t STORE_SIGNATURE = 0x65766173;
 
 /**
- * Device-logic wrapper for a CiA 408 hydraulic / fluid-power node.
+ * Device-logic wrapper for a Danfoss PVED-CC Series 5 fluid-power valve.
  *
- * Drives the controlword (0x6040) through the CiA 402-style state machine, sets the
- * device mode (0x6042, default Position) and the setpoint (0x6300). Reads feedback
- * from 0x6301 and decodes the statusword (0x6041).
+ * Drives the control word (0x6040) through the VDMAPROP device state machine,
+ * keeps the device in CAN-controlled mode (0x6042), streams the spool set point
+ * (0x6300:1) and reads the spool position (0x6301:1) + status word (0x6041).
  *
- * Vendor extensions (Danfoss): use the bus.yml `sdo:` block for one-time configuration
- * writes into the manufacturer range (0x2000–0x5FFF). Run-time vendor-specific behavior
- * should be added here as separate methods.
+ * Set point / feedback are handled as raw int16 here; engineering-unit scaling
+ * (percent) is applied one layer up in NodeCanopen408Driver.
  */
 class HydraulicAxis408
 {
 public:
-  HydraulicAxis408(std::shared_ptr<LelyDriverBridge> driver, Cia408Mode default_mode = Cia408Mode::Position)
-  : driver_(std::move(driver)), target_mode_(default_mode)
+  explicit HydraulicAxis408(std::shared_ptr<LelyDriverBridge> driver)
+  : driver_(std::move(driver))
   {
   }
 
-  /// Run the state-machine bootstrap: clear faults if any, then transition
-  /// SwitchOnDisabled → ReadyToSwitchOn → SwitchedOn → OperationEnabled.
-  /// Returns true if the device reaches OperationEnabled within timeout.
-  bool init(std::chrono::milliseconds timeout = std::chrono::seconds(5));
+  /// Put the device in CAN-controlled mode and step the DSM
+  /// Init -> Disabled -> Hold -> Device_Mode_Active. After this the valve
+  /// follows the set point. Returns true if all commands were accepted.
+  bool enable();
 
-  /// Send a quick-stop command (controlword bit 2 cleared).
-  bool halt();
+  /// Bring the DSM to Hold (spool commanded to neutral, no longer controlled).
+  bool hold();
 
-  /// Fault reset + re-enable.
+  /// Bring the DSM to Disabled.
+  bool disable();
+
+  /// Fault reset (Fault_Hold -> Hold) followed by re-enable.
   bool recover();
 
-  /// Bring the device to SwitchOnDisabled. Counterpart of init().
-  bool shutdown();
+  /// Write the spool set point (0x6300:1) via the mapped RPDO. `raw` is clamped
+  /// to +/-SETPOINT_FULL_SCALE unless it is the sentinel float value.
+  bool set_setpoint(int16_t raw);
 
-  /// Write target value (0x6300) — interpretation depends on the active mode.
-  bool set_target(int32_t raw_target);
+  /// Command the float state (set point = SETPOINT_FLOAT).
+  bool set_float();
 
-  /// Read feedback (0x6301).
-  int32_t get_actual() const;
+  /// Re-transmit the current control word + set point. Call periodically so the
+  /// device's RPDO time-guard does not trip (fault: "RPDO not received within
+  /// timeout"). No-op until enable() has run.
+  void refresh_outputs();
 
-  /// Read statusword (0x6041).
-  uint16_t get_statusword() const;
+  /// Persist the current parameters to EEPROM (write "save" to 0x1010:1).
+  bool save_to_eeprom();
 
-  /// Read device-mode display (0x6043).
-  uint8_t get_mode_display() const;
+  int16_t get_spool_position() const;   ///< 0x6301:1
+  int16_t get_demand() const;           ///< 0x6310
+  uint16_t get_statusword() const;      ///< 0x6041
+  uint16_t get_pcb_temperature() const; ///< 0x3468 (raw)
 
-  /// Change device mode (writes 0x6042). The driver remembers the requested mode
-  /// and re-asserts it during init/recover.
-  bool set_mode(Cia408Mode mode);
-
-  Cia408Mode requested_mode() const { return target_mode_; }
-
-  HydraulicState parse_state(uint16_t statusword) const;
-
-  HydraulicState get_state() const { return parse_state(get_statusword()); }
+  bool is_enabled() const { return enabled_.load(); }
 
 private:
-  // Controlword bit definitions — identical to CiA 402.
-  enum ControlwordBit : uint16_t
-  {
-    CW_SWITCH_ON = 1 << 0,
-    CW_ENABLE_VOLTAGE = 1 << 1,
-    CW_QUICK_STOP = 1 << 2,        // active LOW per CiA 402 — bit must be SET to clear quick-stop
-    CW_ENABLE_OPERATION = 1 << 3,
-    CW_FAULT_RESET = 1 << 7,
-    CW_HALT = 1 << 8,
-  };
-
-  // Composite controlword values for the standard CiA 402-style transitions.
-  // Quick-stop bit (CW_QUICK_STOP) is set in all "active" values per the spec
-  // (it's a "stop is NOT requested" indicator).
-  static constexpr uint16_t CW_SHUTDOWN = CW_ENABLE_VOLTAGE | CW_QUICK_STOP;
-  static constexpr uint16_t CW_SWITCH_ON_CMD = CW_SWITCH_ON | CW_ENABLE_VOLTAGE | CW_QUICK_STOP;
-  static constexpr uint16_t CW_ENABLE_OP_CMD =
-    CW_SWITCH_ON | CW_ENABLE_VOLTAGE | CW_QUICK_STOP | CW_ENABLE_OPERATION;
-  static constexpr uint16_t CW_QUICK_STOP_CMD = CW_ENABLE_VOLTAGE;  // bit 2 cleared
-  static constexpr uint16_t CW_DISABLE_VOLTAGE_CMD = 0;
-  static constexpr uint16_t CW_FAULT_RESET_CMD = CW_FAULT_RESET;
-
   bool write_controlword(uint16_t value);
-  bool wait_for_state(HydraulicState desired, std::chrono::milliseconds timeout);
+  bool set_device_mode(uint8_t mode);
+  bool send_setpoint(int16_t raw);
 
   std::shared_ptr<LelyDriverBridge> driver_;
-  Cia408Mode target_mode_;
+  std::atomic<bool> enabled_{false};
+  std::atomic<uint16_t> current_cw_{CW_DISABLED};
+  std::atomic<int16_t> last_setpoint_{0};
   mutable std::mutex io_mutex_;
 };
 

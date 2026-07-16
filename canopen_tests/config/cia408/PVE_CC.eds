@@ -1,0 +1,626 @@
+[FileInfo]
+FileName=PVE_CC.eds
+FileVersion=0x02
+FileRevision=0x01
+EDSVersion=4.0
+Description=Danfoss PVED-CC Series 5 CANopen electrohydraulic valve actuator (CiA 408)
+CreationTime=12:00PM
+CreationDate=06-29-2026
+CreatedBy=ros2_canopen
+ModificationTime=12:00PM
+ModificationDate=07-16-2026
+ModifiedBy=ros2_canopen
+
+; Danfoss ships no EDS for the PVED-CC. This file was authored from the technical
+; information manual BC180386484705en-000802 ("PVED-CC Series 5 CANopen") and
+; cross-checked against a live unit interrogated over SDO (node 16, 2026-06-29):
+;   device type 0x1000 = 0x00000198 (CiA 408 fluid power)
+;   identity 0x1018    = vendor 0x01000019, product 0x53373235, rev 0x00010100
+; Key facts baked in below:
+;   * Vpoc setpoint 0x6300:1 / actual 0x6301:1 are INTEGER16, -16384..+16384 =
+;     -100%..+100% spool travel; float commanded by +/-32767.
+;   * Device mode 0x6042: 0x01 = CAN controlled, 0x02 = hand operated.
+;   * Control word 0x6040 drives a VDMAPROP device state machine:
+;       0x08 Init, 0x09 Disabled, 0x0B Hold, 0x0F Device_Mode_Active.
+;   * Heartbeat producer 0x1017 defaults to 1000 ms (steps of 10 ms).
+
+[DeviceInfo]
+VendorName=Danfoss
+VendorNumber=0x01000019
+ProductName=PVED-CC Series 5
+ProductNumber=0x53373235
+RevisionNumber=0x00010100
+OrderCode=
+BaudRate_10=0
+BaudRate_20=0
+BaudRate_50=0
+BaudRate_100=0
+BaudRate_125=1
+BaudRate_250=1
+BaudRate_500=1
+BaudRate_800=0
+BaudRate_1000=1
+SimpleBootUpMaster=0
+SimpleBootUpSlave=1
+Granularity=8
+DynamicChannelsSupported=0
+GroupMessaging=0
+NrOfRXPDO=2
+NrOfTXPDO=2
+LSS_Supported=1
+
+[DummyUsage]
+Dummy0001=0
+Dummy0002=1
+Dummy0003=1
+Dummy0004=1
+Dummy0005=1
+Dummy0006=1
+Dummy0007=1
+
+[Comments]
+Lines=0
+
+[MandatoryObjects]
+SupportedObjects=3
+1=0x1000
+2=0x1001
+3=0x1018
+
+[1000]
+ParameterName=Device Type
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00000198
+PDOMapping=0
+
+[1001]
+ParameterName=Error Register
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x00
+PDOMapping=0
+
+[1018]
+SubNumber=5
+ParameterName=Identity Object
+ObjectType=0x09
+
+[1018sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x04
+PDOMapping=0
+
+[1018sub1]
+ParameterName=Vendor ID
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x01000019
+PDOMapping=0
+
+[1018sub2]
+ParameterName=Product Code
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x53373235
+PDOMapping=0
+
+[1018sub3]
+ParameterName=Revision Number
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x00010100
+PDOMapping=0
+
+[1018sub4]
+ParameterName=Serial Number
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=0x0AD4021C
+PDOMapping=0
+
+[OptionalObjects]
+SupportedObjects=21
+1=0x1010
+2=0x1014
+3=0x1017
+4=0x1028
+5=0x1200
+6=0x1400
+7=0x1401
+8=0x1600
+9=0x1601
+10=0x1800
+11=0x1801
+12=0x1A00
+13=0x1A01
+14=0x6040
+15=0x6041
+16=0x6042
+17=0x6300
+18=0x6301
+19=0x6310
+20=0x3468
+21=0x3469
+
+[1010]
+SubNumber=2
+ParameterName=Store Parameters
+ObjectType=0x08
+
+[1010sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x01
+PDOMapping=0
+
+[1010sub1]
+ParameterName=Save all Parameters
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000000
+PDOMapping=0
+
+[1014]
+ParameterName=COB-ID Emergency
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=$NODEID+0x80
+PDOMapping=0
+
+[1017]
+ParameterName=Producer Heartbeat Time
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=1000
+PDOMapping=0
+
+[1028]
+SubNumber=2
+ParameterName=Emergency Consumer Object
+ObjectType=0x08
+
+[1028sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x00
+PDOMapping=0
+
+[1028sub1]
+ParameterName=Emergency Consumer 1
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00000000
+PDOMapping=0
+
+[1200]
+SubNumber=3
+ParameterName=SDO Server Parameter
+ObjectType=0x09
+
+[1200sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x02
+PDOMapping=0
+
+[1200sub1]
+ParameterName=COB-ID Client to Server (Receive SDO)
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=$NODEID+0x600
+PDOMapping=0
+
+[1200sub2]
+ParameterName=COB-ID Server to Client (Transmit SDO)
+ObjectType=0x07
+DataType=0x0007
+AccessType=ro
+DefaultValue=$NODEID+0x580
+PDOMapping=0
+
+[1400]
+SubNumber=4
+ParameterName=Receive PDO Communication Parameter 1
+ObjectType=0x09
+
+[1400sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x05
+PDOMapping=0
+
+[1400sub1]
+ParameterName=COB-ID
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=$NODEID+0x200
+PDOMapping=0
+
+[1400sub2]
+ParameterName=Transmission Type
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+PDOMapping=0
+
+[1400sub5]
+ParameterName=Event Timer
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=0
+
+[1401]
+SubNumber=4
+ParameterName=Receive PDO Communication Parameter 2
+ObjectType=0x09
+
+[1401sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x05
+PDOMapping=0
+
+[1401sub1]
+ParameterName=COB-ID
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=$NODEID+0x300
+PDOMapping=0
+
+[1401sub2]
+ParameterName=Transmission Type
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+PDOMapping=0
+
+[1401sub5]
+ParameterName=Event Timer
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=0
+
+[1600]
+SubNumber=3
+ParameterName=Receive PDO Mapping Parameter 1
+ObjectType=0x09
+
+[1600sub0]
+ParameterName=Number of mapped objects
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x02
+PDOMapping=0
+
+[1600sub1]
+ParameterName=Mapping Entry 1
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x00030010
+PDOMapping=0
+
+[1600sub2]
+ParameterName=Mapping Entry 2
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x63000110
+PDOMapping=0
+
+[1601]
+SubNumber=3
+ParameterName=Receive PDO Mapping Parameter 2
+ObjectType=0x09
+
+[1601sub0]
+ParameterName=Number of mapped objects
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x02
+PDOMapping=0
+
+[1601sub1]
+ParameterName=Mapping Entry 1
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x60400010
+PDOMapping=0
+
+[1601sub2]
+ParameterName=Mapping Entry 2
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x60420008
+PDOMapping=0
+
+[1800]
+SubNumber=5
+ParameterName=Transmit PDO Communication Parameter 1
+ObjectType=0x09
+
+[1800sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x05
+PDOMapping=0
+
+[1800sub1]
+ParameterName=COB-ID
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=$NODEID+0x180
+PDOMapping=0
+
+[1800sub2]
+ParameterName=Transmission Type
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+PDOMapping=0
+
+[1800sub3]
+ParameterName=Inhibit Time
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=0
+
+[1800sub5]
+ParameterName=Event Timer
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0064
+PDOMapping=0
+
+[1801]
+SubNumber=5
+ParameterName=Transmit PDO Communication Parameter 2
+ObjectType=0x09
+
+[1801sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x05
+PDOMapping=0
+
+[1801sub1]
+ParameterName=COB-ID
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=$NODEID+0x280
+PDOMapping=0
+
+[1801sub2]
+ParameterName=Transmission Type
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0xFF
+PDOMapping=0
+
+[1801sub3]
+ParameterName=Inhibit Time
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=0
+
+[1801sub5]
+ParameterName=Event Timer
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0064
+PDOMapping=0
+
+[1A00]
+SubNumber=3
+ParameterName=Transmit PDO Mapping Parameter 1
+ObjectType=0x09
+
+[1A00sub0]
+ParameterName=Number of mapped objects
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x02
+PDOMapping=0
+
+[1A00sub1]
+ParameterName=Mapping Entry 1
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x60410010
+PDOMapping=0
+
+[1A00sub2]
+ParameterName=Mapping Entry 2
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x63010110
+PDOMapping=0
+
+[1A01]
+SubNumber=5
+ParameterName=Transmit PDO Mapping Parameter 2
+ObjectType=0x09
+
+[1A01sub0]
+ParameterName=Number of mapped objects
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x04
+PDOMapping=0
+
+[1A01sub1]
+ParameterName=Mapping Entry 1
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x63100010
+PDOMapping=0
+
+[1A01sub2]
+ParameterName=Mapping Entry 2
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x33010008
+PDOMapping=0
+
+[1A01sub3]
+ParameterName=Mapping Entry 3
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x33020008
+PDOMapping=0
+
+[1A01sub4]
+ParameterName=Mapping Entry 4
+ObjectType=0x07
+DataType=0x0007
+AccessType=rw
+DefaultValue=0x33040010
+PDOMapping=0
+
+[6040]
+ParameterName=Device Control Word
+ObjectType=0x07
+DataType=0x0006
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=1
+
+[6041]
+ParameterName=Device Status Word
+ObjectType=0x07
+DataType=0x0006
+AccessType=ro
+DefaultValue=0x0000
+PDOMapping=1
+
+[6042]
+ParameterName=Device Mode
+ObjectType=0x07
+DataType=0x0005
+AccessType=rw
+DefaultValue=0x01
+PDOMapping=1
+
+[6300]
+SubNumber=2
+ParameterName=Vpoc Set Point
+ObjectType=0x08
+
+[6300sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x01
+PDOMapping=0
+
+[6300sub1]
+ParameterName=Vpoc Set Point Channel 1
+ObjectType=0x07
+DataType=0x0003
+AccessType=rw
+DefaultValue=0x0000
+PDOMapping=1
+
+[6301]
+SubNumber=2
+ParameterName=Vpoc Actual Value
+ObjectType=0x08
+
+[6301sub0]
+ParameterName=Number of entries
+ObjectType=0x07
+DataType=0x0005
+AccessType=ro
+DefaultValue=0x01
+PDOMapping=0
+
+[6301sub1]
+ParameterName=Vpoc Actual Value Channel 1 (Spool Position)
+ObjectType=0x07
+DataType=0x0003
+AccessType=ro
+DefaultValue=0x0000
+PDOMapping=1
+
+[6310]
+ParameterName=Demand Value
+ObjectType=0x07
+DataType=0x0003
+AccessType=ro
+DefaultValue=0x0000
+PDOMapping=1
+
+[3468]
+ParameterName=Current PCB Temperature
+ObjectType=0x07
+DataType=0x0006
+AccessType=ro
+DefaultValue=0x0000
+PDOMapping=1
+
+[3469]
+ParameterName=Battery Voltage
+ObjectType=0x07
+DataType=0x0006
+AccessType=ro
+DefaultValue=0x0000
+PDOMapping=1

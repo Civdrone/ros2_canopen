@@ -8,56 +8,73 @@ master:
   sync_period: 10000
 
 defaults:
-  # NOTE: replace with the Danfoss-supplied EDS (PVED-CL / PVED-CLS / PVG-32 EX / Plus+1).
-  dcf: "cia408_slave.eds"
+  # EDS authored from Danfoss manual BC180386484705en-000802 (PVED-CC Series 5)
+  # and verified against the live unit. See PVE_CC.eds header.
+  dcf: "PVE_CC.eds"
   driver: "ros2_canopen::Cia408Driver"
   package: "canopen_408_driver"
   period: 10
   boot_timeout_ms: 1000
 
-  # One-shot SDOs at boot — typical Danfoss devices need:
-  #   * heartbeat producer time (0x1017) set, default is OFF on Danfoss
-  #   * device mode (0x6042) set to the desired mode (2 = Position)
-  #   * vendor-specific calibration / curve writes (range 0x2000–0x5FFF, EDS-dependent)
+  # One-shot SDOs at boot.
+  #   0x1017 heartbeat: PVED uses 10 ms steps, range 0..100 (=0..1000 ms).
+  #           50 -> 500 ms. Defaults to OFF, so the master needs this to supervise.
+  #   0x6042 device mode: 0x01 = CAN controlled (required to accept setpoints),
+  #           0x02 = hand operated.
   sdo:
-    - {index: 0x1017, sub_index: 0, value: 500}    # heartbeat 500 ms
-    - {index: 0x6042, sub_index: 0, value: 2}      # device mode = position
-    # - {index: 0x2xxx, sub_index: ?, value: ?}    # vendor-specific (fill from EDS)
+    - {index: 0x1017, sub_index: 0, value: 50}     # heartbeat 500 ms (10 ms steps)
+    - {index: 0x6042, sub_index: 0, value: 1}      # device mode = CAN controlled
+
+  # PDO layout per the manual (COB-IDs are configurable on this device, so the
+  # master may remap freely -- unlike the DST X720 inclinometer).
+  #   RPDO1 (0x200+id): Vpoc set point (spool command), int16 -16384..+16384
+  #   RPDO2 (0x300+id): control word (DSM) + device mode
+  #   TPDO1 (0x180+id): status word + Vpoc actual (spool position)
+  #   TPDO2 (0x280+id): demand value + PCB temperature (telemetry)
+  rpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6300, sub_index: 1}  # Vpoc set point (int16, +/-16384 = +/-100% spool)
+    2:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6040, sub_index: 0}  # control word: 0x08 Init 0x09 Disabled 0x0B Hold 0x0F Active
+        - {index: 0x6042, sub_index: 0}  # device mode (0x01 CAN / 0x02 hand)
 
   tpdo:
-    # Statusword + mode display + actual feedback
     1:
       enabled: true
       cob_id: "auto"
-      transmission: 0x01
+      transmission: 0xFF
       mapping:
-        - {index: 0x6041, sub_index: 0}  # statusword
-        - {index: 0x6043, sub_index: 0}  # device mode display
+        - {index: 0x6041, sub_index: 0}  # status word
+        - {index: 0x6301, sub_index: 1}  # Vpoc actual = spool position (int16, +/-16384 = +/-100%)
+    # TPDO2 is telemetry-only. If first boot fails on "Configuration download
+    # failed", comment this block out -- it is not required to run the valve.
     2:
       enabled: true
       cob_id: "auto"
-      transmission: 0x01
+      transmission: 0xFF
       mapping:
-        - {index: 0x6301, sub_index: 0}  # actual value
-
-  rpdo:
-    # Controlword + target value (position-mode setpoint)
-    1:
-      enabled: true
-      cob_id: "auto"
-      mapping:
-        - {index: 0x6040, sub_index: 0}  # controlword
-    2:
-      enabled: true
-      cob_id: "auto"
-      mapping:
-        - {index: 0x6300, sub_index: 0}  # target value
+        - {index: 0x6310, sub_index: 0}  # demand value (int16)
+        - {index: 0x3468, sub_index: 0}  # PCB temperature (uint16)
 
 nodes:
   hydraulic_axis_1:
-    node_id: 2
-    # scale_target_to_dev: 1000.0        # double → raw int32 multiplier
-    # scale_actual_from_dev: 0.001       # raw int32 → double multiplier
-    # offset: 0.0
-    # default_mode: 2                    # 1=Manual, 2=Position, 3=Pressure, 4=Flow, 5=Speed
+    node_id: 16                          # PVED-CC, confirmed on the bus (boot-up 0x710)
+    vendor_id: 0x01000019                # 0x1018:1
+    product_code: 0x53373235             # 0x1018:2
+    # revision_number: 0x00010100        # 0x1018:3
+
+    # Spool setpoint/feedback scaling. Device is int16 -16384..+16384 = -100%..+100%.
+    # These defaults make the ROS interface work in PERCENT (-100 .. +100):
+    scale_target_to_dev: 163.84          # percent -> raw   (16384 / 100)
+    scale_actual_from_dev: 0.006103515625  # raw -> percent (100 / 16384)
+    offset: 0.0
+    # float_setpoint_raw: 32767          # value written to request float state
     # init_timeout_ms: 5000

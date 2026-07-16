@@ -76,6 +76,11 @@ install(
 )
 
 install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(
   TARGETS lifecycle_cia410_driver cia410_driver node_canopen_cia410_driver
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
