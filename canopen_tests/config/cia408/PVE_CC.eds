@@ -44,8 +44,8 @@ SimpleBootUpSlave=1
 Granularity=8
 DynamicChannelsSupported=0
 GroupMessaging=0
-NrOfRXPDO=2
-NrOfTXPDO=2
+NrOfRXPDO=1
+NrOfTXPDO=1
 LSS_Supported=1
 
 [DummyUsage]
@@ -128,26 +128,22 @@ DefaultValue=0x00000000
 PDOMapping=0
 
 [OptionalObjects]
-SupportedObjects=19
+SupportedObjects=15
 1=0x1010
 2=0x1014
 3=0x1017
 4=0x1028
 5=0x1200
 6=0x1400
-7=0x1401
-8=0x1600
-9=0x1601
-10=0x1800
-11=0x1801
-12=0x1A00
-13=0x1A01
-14=0x6040
-15=0x6041
-16=0x6042
-17=0x6300
-18=0x6301
-19=0x6310
+7=0x1600
+8=0x1800
+9=0x1A00
+10=0x6040
+11=0x6041
+12=0x6042
+13=0x6300
+14=0x6301
+15=0x6310
 
 [ManufacturerObjects]
 SupportedObjects=2
@@ -278,45 +274,8 @@ AccessType=rw
 DefaultValue=0x0000
 PDOMapping=0
 
-[1401]
-SubNumber=4
-ParameterName=Receive PDO Communication Parameter 2
-ObjectType=0x09
-
-[1401sub0]
-ParameterName=Number of entries
-ObjectType=0x07
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x05
-PDOMapping=0
-
-[1401sub1]
-ParameterName=COB-ID
-ObjectType=0x07
-DataType=0x0007
-AccessType=rw
-DefaultValue=$NODEID+0x300
-PDOMapping=0
-
-[1401sub2]
-ParameterName=Transmission Type
-ObjectType=0x07
-DataType=0x0005
-AccessType=rw
-DefaultValue=0xFF
-PDOMapping=0
-
-[1401sub5]
-ParameterName=Event Timer
-ObjectType=0x07
-DataType=0x0006
-AccessType=rw
-DefaultValue=0x0000
-PDOMapping=0
-
 [1600]
-SubNumber=2
+SubNumber=3
 ParameterName=Receive PDO Mapping Parameter 1
 ObjectType=0x09
 
@@ -325,7 +284,7 @@ ParameterName=Number of mapped objects
 ObjectType=0x07
 DataType=0x0005
 AccessType=rw
-DefaultValue=0x01
+DefaultValue=0x02
 PDOMapping=0
 
 [1600sub1]
@@ -333,36 +292,15 @@ ParameterName=Mapping Entry 1
 ObjectType=0x07
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x63000110
-PDOMapping=0
-
-[1601]
-SubNumber=3
-ParameterName=Receive PDO Mapping Parameter 2
-ObjectType=0x09
-
-[1601sub0]
-ParameterName=Number of mapped objects
-ObjectType=0x07
-DataType=0x0005
-AccessType=rw
-DefaultValue=0x02
-PDOMapping=0
-
-[1601sub1]
-ParameterName=Mapping Entry 1
-ObjectType=0x07
-DataType=0x0007
-AccessType=rw
 DefaultValue=0x60400010
 PDOMapping=0
 
-[1601sub2]
+[1600sub2]
 ParameterName=Mapping Entry 2
 ObjectType=0x07
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x60420008
+DefaultValue=0x63000110
 PDOMapping=0
 
 [1800]
@@ -410,51 +348,6 @@ AccessType=rw
 DefaultValue=0x0064
 PDOMapping=0
 
-[1801]
-SubNumber=5
-ParameterName=Transmit PDO Communication Parameter 2
-ObjectType=0x09
-
-[1801sub0]
-ParameterName=Number of entries
-ObjectType=0x07
-DataType=0x0005
-AccessType=ro
-DefaultValue=0x05
-PDOMapping=0
-
-[1801sub1]
-ParameterName=COB-ID
-ObjectType=0x07
-DataType=0x0007
-AccessType=rw
-DefaultValue=$NODEID+0x280
-PDOMapping=0
-
-[1801sub2]
-ParameterName=Transmission Type
-ObjectType=0x07
-DataType=0x0005
-AccessType=rw
-DefaultValue=0xFF
-PDOMapping=0
-
-[1801sub3]
-ParameterName=Inhibit Time
-ObjectType=0x07
-DataType=0x0006
-AccessType=rw
-DefaultValue=0x0000
-PDOMapping=0
-
-[1801sub5]
-ParameterName=Event Timer
-ObjectType=0x07
-DataType=0x0006
-AccessType=rw
-DefaultValue=0x0064
-PDOMapping=0
-
 [1A00]
 SubNumber=3
 ParameterName=Transmit PDO Mapping Parameter 1
@@ -482,35 +375,6 @@ ObjectType=0x07
 DataType=0x0007
 AccessType=rw
 DefaultValue=0x63010110
-PDOMapping=0
-
-[1A01]
-SubNumber=3
-ParameterName=Transmit PDO Mapping Parameter 2
-ObjectType=0x09
-
-[1A01sub0]
-ParameterName=Number of mapped objects
-ObjectType=0x07
-DataType=0x0005
-AccessType=rw
-DefaultValue=0x02
-PDOMapping=0
-
-[1A01sub1]
-ParameterName=Mapping Entry 1
-ObjectType=0x07
-DataType=0x0007
-AccessType=rw
-DefaultValue=0x63100010
-PDOMapping=0
-
-[1A01sub2]
-ParameterName=Mapping Entry 2
-ObjectType=0x07
-DataType=0x0007
-AccessType=rw
-DefaultValue=0x34680010
 PDOMapping=0
 
 [6040]

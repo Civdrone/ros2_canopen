@@ -91,21 +91,17 @@ hydraulic_valve:
     - {index: 0x1017, sub_index: 0, value: 50}
     - {index: 0x6042, sub_index: 0, value: 1}
 
-  # PDOs per the PVED-CC manual (COB-IDs are configurable on this device).
+  # This firmware rejects RPDO2/TPDO2 over SDO (config download abort 0x06040047),
+  # so everything rides RPDO1/TPDO1 -- the device's native single-PDO layout.
+  # Device mode is set once via the boot SDO above (0x6042), not via a PDO.
   rpdo:
     1:
       enabled: true
       cob_id: "auto"
       transmission: 0xFF
       mapping:
-        - {index: 0x6300, sub_index: 1}  # Vpoc set point
-    2:
-      enabled: true
-      cob_id: "auto"
-      transmission: 0xFF
-      mapping:
         - {index: 0x6040, sub_index: 0}  # control word (0x08/09/0B/0F)
-        - {index: 0x6042, sub_index: 0}  # device mode
+        - {index: 0x6300, sub_index: 1}  # Vpoc set point
   tpdo:
     1:
       enabled: true
@@ -114,11 +110,3 @@ hydraulic_valve:
       mapping:
         - {index: 0x6041, sub_index: 0}  # status word
         - {index: 0x6301, sub_index: 1}  # Vpoc actual = spool position
-    # Telemetry-only; comment out if boot fails on "Configuration download failed".
-    2:
-      enabled: true
-      cob_id: "auto"
-      transmission: 0xFF
-      mapping:
-        - {index: 0x6310, sub_index: 0}  # demand value
-        - {index: 0x3468, sub_index: 0}  # PCB temperature

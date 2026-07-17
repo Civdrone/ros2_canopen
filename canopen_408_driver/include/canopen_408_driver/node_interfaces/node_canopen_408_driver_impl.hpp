@@ -190,21 +190,19 @@ void NodeCanopen408Driver<NODETYPE>::publish()
 {
   if (!axis_) return;
 
+  // spool position + status word come from TPDO1 (cached reads, no bus traffic).
   std_msgs::msg::Float64 spool;
   spool.data = get_spool_position();
   spool_position_publisher_->publish(spool);
-
-  std_msgs::msg::Float64 demand;
-  demand.data = static_cast<double>(axis_->get_demand()) * scale_from_dev_ + offset_;
-  demand_publisher_->publish(demand);
 
   std_msgs::msg::UInt16 sw;
   sw.data = axis_->get_statusword();
   statusword_publisher_->publish(sw);
 
-  std_msgs::msg::UInt16 temp;
-  temp.data = axis_->get_pcb_temperature();
-  temperature_publisher_->publish(temp);
+  // NOTE: demand (0x6310) and PCB temperature (0x3468) lived on TPDO2, which this
+  // PVED firmware rejects (SDO abort 0x06040047). They are intentionally not
+  // published here -- reading them would force a blocking SDO every cycle. If you
+  // need them, add a decimated SDO poll (e.g. every ~1s) rather than per-cycle.
 }
 
 template <class NODETYPE>

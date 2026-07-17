@@ -32,20 +32,17 @@ defaults:
   #   RPDO2 (0x300+id): control word (DSM) + device mode
   #   TPDO1 (0x180+id): status word + Vpoc actual (spool position)
   #   TPDO2 (0x280+id): demand value + PCB temperature (telemetry)
+  # This firmware rejects RPDO2/TPDO2 over SDO (config download abort 0x06040047),
+  # so everything rides RPDO1/TPDO1 -- the device's native single-PDO layout.
+  # Device mode is set once via the boot SDO above (0x6042), not via a PDO.
   rpdo:
     1:
       enabled: true
       cob_id: "auto"
       transmission: 0xFF
       mapping:
-        - {index: 0x6300, sub_index: 1}  # Vpoc set point (int16, +/-16384 = +/-100% spool)
-    2:
-      enabled: true
-      cob_id: "auto"
-      transmission: 0xFF
-      mapping:
         - {index: 0x6040, sub_index: 0}  # control word: 0x08 Init 0x09 Disabled 0x0B Hold 0x0F Active
-        - {index: 0x6042, sub_index: 0}  # device mode (0x01 CAN / 0x02 hand)
+        - {index: 0x6300, sub_index: 1}  # Vpoc set point (int16, +/-16384 = +/-100% spool)
 
   tpdo:
     1:
@@ -55,15 +52,6 @@ defaults:
       mapping:
         - {index: 0x6041, sub_index: 0}  # status word
         - {index: 0x6301, sub_index: 1}  # Vpoc actual = spool position (int16, +/-16384 = +/-100%)
-    # TPDO2 is telemetry-only. If first boot fails on "Configuration download
-    # failed", comment this block out -- it is not required to run the valve.
-    2:
-      enabled: true
-      cob_id: "auto"
-      transmission: 0xFF
-      mapping:
-        - {index: 0x6310, sub_index: 0}  # demand value (int16)
-        - {index: 0x3468, sub_index: 0}  # PCB temperature (uint16)
 
 nodes:
   hydraulic_axis_1:
