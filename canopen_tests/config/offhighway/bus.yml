@@ -1,0 +1,121 @@
+# Combined deployment bus for the off-highway stack: Danfoss DST X720 inclinometer
+# (CiA 410, node 127) + Danfoss PVED-CC Series 5 valve (CiA 408, node 16) on canE.
+#
+# DEPLOYMENT format (flat top-level nodes), matching what canopen_core's
+# device_container actually parses at runtime: every top-level key except
+# `options`/`master` is a driver node and MUST carry driver/package/node_id.
+# (The `defaults:`/`nodes:` style in the cia402/cia408 test configs is the
+# dcfgen/cogen_dcf build-time format and will NOT load at runtime.)
+#
+# Deploy this to /data/ros2_canopen/bus.yml and make sure BOTH EDS files live in
+# that same directory:
+#     DST_X720.eds   (from canopen_tests/config/cia410/)
+#     PVE_CC.eds     (from canopen_tests/config/cia408/)
+# Regenerate master.dcf from this file (dcfgen) so node 16's PDOs are included,
+# then launch e.g.:
+#     ros2 launch canopen_408_driver cia408.launch.py config_dir:=/data/ros2_canopen can_interface:=canE
+options:
+  dcf_path: "/data/ros2_canopen"
+  interface: "canE"
+  non_blocking_mode: true
+
+master:
+  node_id: 1
+  baudrate: 250
+  driver: "ros2_canopen::MasterDriver"
+  package: "canopen_master_driver"
+  sync_period: 10000
+
+# --------------------------------------------------------------------------- #
+# Inclinometer (CiA 410) — Posital/Danfoss DST X720                            #
+# --------------------------------------------------------------------------- #
+inclinometer_sensor:
+  node_id: 127
+  dcf: "DST_X720.eds"
+  driver: "ros2_canopen::Cia410Driver"
+  package: "canopen_410_driver"
+  vendor_id: 0x00000093
+  product_code: 0x00000064
+  boot: true
+  mandatory: false
+  polling: false
+
+  frame_id: "inclinometer_link"
+  imu_topic: "~/imu"
+  inclination_topic: "~/inclination"
+  has_lateral_axis: true
+  deg_per_lsb: 0.05
+  # orientation_stddev: 0.005
+
+  # DST X720 deviates from the CiA 410 standard layout (see cia410/bus.yml notes).
+  register_map:
+    slope_long_index: 0x6010
+    slope_long_bits: 16
+    slope_lateral_index: 0x6020
+    slope_lateral_bits: 16
+    slope_long_preset_index: 0x6012
+    slope_lateral_preset_index: 0x6022
+    slope_long_offset_index: 0x6014
+    slope_lateral_offset_index: 0x6024
+    preset_bits: 16
+    offset_bits: 16
+  # TPDO intentionally NOT overridden: the DST X720 has 0x1800:1 read-only, so
+  # remapping fails boot. Its factory TPDO1 (0x180+id, 0x6010 + 0x6020) is used
+  # as-is.
+
+# --------------------------------------------------------------------------- #
+# Hydraulic valve (CiA 408) — Danfoss PVED-CC Series 5                         #
+# --------------------------------------------------------------------------- #
+hydraulic_valve:
+  node_id: 16
+  dcf: "PVE_CC.eds"
+  driver: "ros2_canopen::Cia408Driver"
+  package: "canopen_408_driver"
+  period: 10
+  boot_timeout_ms: 1000
+  vendor_id: 0x01000019
+  product_code: 0x53373235
+
+  # Spool setpoint/feedback scaling: device int16 -16384..+16384 = -100..+100%.
+  # ROS interface works in PERCENT.
+  scale_target_to_dev: 163.84            # percent -> raw (16384/100)
+  scale_actual_from_dev: 0.006103515625  # raw -> percent (100/16384)
+  offset: 0.0
+  # float_setpoint_raw: 32767
+
+  # Boot SDOs: enable heartbeat (10 ms steps, 50 = 500 ms) and CAN-controlled mode.
+  sdo:
+    - {index: 0x1017, sub_index: 0, value: 50}
+    - {index: 0x6042, sub_index: 0, value: 1}
+
+  # PDOs per the PVED-CC manual (COB-IDs are configurable on this device).
+  rpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6300, sub_index: 1}  # Vpoc set point
+    2:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6040, sub_index: 0}  # control word (0x08/09/0B/0F)
+        - {index: 0x6042, sub_index: 0}  # device mode
+  tpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6041, sub_index: 0}  # status word
+        - {index: 0x6301, sub_index: 1}  # Vpoc actual = spool position
+    # Telemetry-only; comment out if boot fails on "Configuration download failed".
+    2:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6310, sub_index: 0}  # demand value
+        - {index: 0x3468, sub_index: 0}  # PCB temperature

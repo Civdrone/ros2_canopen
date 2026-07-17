@@ -34,7 +34,6 @@ OrderCode=
 BaudRate_10=0
 BaudRate_20=0
 BaudRate_50=0
-BaudRate_100=0
 BaudRate_125=1
 BaudRate_250=1
 BaudRate_500=1
@@ -129,7 +128,7 @@ DefaultValue=0x0AD4021C
 PDOMapping=0
 
 [OptionalObjects]
-SupportedObjects=21
+SupportedObjects=19
 1=0x1010
 2=0x1014
 3=0x1017
@@ -149,8 +148,11 @@ SupportedObjects=21
 17=0x6300
 18=0x6301
 19=0x6310
-20=0x3468
-21=0x3469
+
+[ManufacturerObjects]
+SupportedObjects=2
+1=0x3468
+2=0x3469
 
 [1010]
 SubNumber=2
