@@ -14,7 +14,8 @@ defaults:
   driver: "ros2_canopen::Cia408Driver"
   package: "canopen_408_driver"
   period: 10
-  boot_timeout_ms: 1000
+  boot_timeout_ms: 10000               # PVED runs a power-on self-test after NMT
+                                       # reset; 1s is not enough to finish boot config
 
   # One-shot SDOs at boot.
   #   0x1017 heartbeat: PVED uses 10 ms steps, range 0..100 (=0..1000 ms).

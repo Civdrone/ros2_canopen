@@ -72,7 +72,10 @@ hydraulic_valve:
   driver: "ros2_canopen::Cia408Driver"
   package: "canopen_408_driver"
   period: 10
-  boot_timeout_ms: 1000
+  boot: true
+  mandatory: false
+  boot_timeout_ms: 10000               # PVED runs a power-on self-test after NMT
+                                       # reset; 1s is not enough to finish boot config
   vendor_id: 0x01000019
   product_code: 0x53373235
 
