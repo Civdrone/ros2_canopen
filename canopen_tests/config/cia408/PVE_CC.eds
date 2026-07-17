@@ -316,7 +316,7 @@ DefaultValue=0x0000
 PDOMapping=0
 
 [1600]
-SubNumber=3
+SubNumber=2
 ParameterName=Receive PDO Mapping Parameter 1
 ObjectType=0x09
 
@@ -325,19 +325,11 @@ ParameterName=Number of mapped objects
 ObjectType=0x07
 DataType=0x0005
 AccessType=rw
-DefaultValue=0x02
+DefaultValue=0x01
 PDOMapping=0
 
 [1600sub1]
 ParameterName=Mapping Entry 1
-ObjectType=0x07
-DataType=0x0007
-AccessType=rw
-DefaultValue=0x00030010
-PDOMapping=0
-
-[1600sub2]
-ParameterName=Mapping Entry 2
 ObjectType=0x07
 DataType=0x0007
 AccessType=rw
@@ -493,7 +485,7 @@ DefaultValue=0x63010110
 PDOMapping=0
 
 [1A01]
-SubNumber=5
+SubNumber=3
 ParameterName=Transmit PDO Mapping Parameter 2
 ObjectType=0x09
 
@@ -502,7 +494,7 @@ ParameterName=Number of mapped objects
 ObjectType=0x07
 DataType=0x0005
 AccessType=rw
-DefaultValue=0x04
+DefaultValue=0x02
 PDOMapping=0
 
 [1A01sub1]
@@ -518,23 +510,7 @@ ParameterName=Mapping Entry 2
 ObjectType=0x07
 DataType=0x0007
 AccessType=rw
-DefaultValue=0x33010008
-PDOMapping=0
-
-[1A01sub3]
-ParameterName=Mapping Entry 3
-ObjectType=0x07
-DataType=0x0007
-AccessType=rw
-DefaultValue=0x33020008
-PDOMapping=0
-
-[1A01sub4]
-ParameterName=Mapping Entry 4
-ObjectType=0x07
-DataType=0x0007
-AccessType=rw
-DefaultValue=0x33040010
+DefaultValue=0x34680010
 PDOMapping=0
 
 [6040]
