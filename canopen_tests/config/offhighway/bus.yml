@@ -1,19 +1,20 @@
-# Combined deployment bus for the off-highway stack: Danfoss DST X720 inclinometer
-# (CiA 410, node 127) + Danfoss PVED-CC Series 5 valve (CiA 408, node 16) on canE.
+# Combined deployment bus: DST X720 inclinometer (CiA 410, node 127) + four
+# Danfoss PVED-CC Series 5 valves (CiA 408) on canE.
 #
-# DEPLOYMENT format (flat top-level nodes), matching what canopen_core's
-# device_container actually parses at runtime: every top-level key except
-# `options`/`master` is a driver node and MUST carry driver/package/node_id.
-# (The `defaults:`/`nodes:` style in the cia402/cia408 test configs is the
-# dcfgen/cogen_dcf build-time format and will NOT load at runtime.)
+# DEPLOYMENT format (flat top-level nodes) -- what device_container parses at
+# runtime. Every top-level key except options/master is a driver node and MUST
+# carry driver/package/node_id. There is NO `defaults:`/`nodes:` merging at
+# runtime, so each valve block is spelled out in full; the four valve blocks are
+# IDENTICAL except for `node_id` and the node name (which becomes the ROS
+# namespace, e.g. /mast_roll/spool_position).
 #
-# Deploy this to /data/ros2_canopen/bus.yml and make sure BOTH EDS files live in
-# that same directory:
-#     DST_X720.eds   (from canopen_tests/config/cia410/)
-#     PVE_CC.eds     (from canopen_tests/config/cia408/)
-# Regenerate master.dcf from this file (dcfgen) so node 16's PDOs are included,
-# then launch e.g.:
-#     ros2 launch canopen_408_driver cia408.launch.py config_dir:=/data/ros2_canopen can_interface:=canE
+# Node-ID map:  master=1, inclinometer=127,
+#               mast_roll=16, mast_pitch=17, gantry_x=18, gantry_y=19
+# All PVEDs ship at node 16 -- assign unique IDs one at a time with
+# canopen_408_driver/scripts/commission_pved_nodeid.sh BEFORE bussing them together.
+#
+# Deploy to /data/ros2_canopen/bus.yml with DST_X720.eds + PVE_CC.eds alongside,
+# then: dcfgen -r -S /data/ros2_canopen/bus.yml
 options:
   dcf_path: "/data/ros2_canopen"
   interface: "canE"
@@ -39,15 +40,11 @@ inclinometer_sensor:
   boot: true
   mandatory: false
   polling: false
-
   frame_id: "inclinometer_link"
   imu_topic: "~/imu"
   inclination_topic: "~/inclination"
   has_lateral_axis: true
   deg_per_lsb: 0.05
-  # orientation_stddev: 0.005
-
-  # DST X720 deviates from the CiA 410 standard layout (see cia410/bus.yml notes).
   register_map:
     slope_long_index: 0x6010
     slope_long_bits: 16
@@ -59,14 +56,11 @@ inclinometer_sensor:
     slope_lateral_offset_index: 0x6024
     preset_bits: 16
     offset_bits: 16
-  # TPDO intentionally NOT overridden: the DST X720 has 0x1800:1 read-only, so
-  # remapping fails boot. Its factory TPDO1 (0x180+id, 0x6010 + 0x6020) is used
-  # as-is.
 
 # --------------------------------------------------------------------------- #
-# Hydraulic valve (CiA 408) — Danfoss PVED-CC Series 5                         #
+# PVED-CC valves (CiA 408). Blocks are identical except node_id + name.        #
 # --------------------------------------------------------------------------- #
-hydraulic_valve:
+mast_roll:
   node_id: 16
   dcf: "PVE_CC.eds"
   driver: "ros2_canopen::Cia408Driver"
@@ -74,39 +68,130 @@ hydraulic_valve:
   period: 10
   boot: true
   mandatory: false
-  boot_timeout_ms: 10000               # PVED runs a power-on self-test after NMT
-                                       # reset; 1s is not enough to finish boot config
+  boot_timeout_ms: 10000
   vendor_id: 0x01000019
   product_code: 0x53373235
-
-  # Spool setpoint/feedback scaling: device int16 -16384..+16384 = -100..+100%.
-  # ROS interface works in PERCENT.
-  scale_target_to_dev: 163.84            # percent -> raw (16384/100)
-  scale_actual_from_dev: 0.006103515625  # raw -> percent (100/16384)
+  scale_target_to_dev: 163.84
+  scale_actual_from_dev: 0.006103515625
   offset: 0.0
-  # float_setpoint_raw: 32767
-
-  # Boot SDOs: enable heartbeat (10 ms steps, 50 = 500 ms) and CAN-controlled mode.
   sdo:
     - {index: 0x1017, sub_index: 0, value: 50}
     - {index: 0x6042, sub_index: 0, value: 1}
-
-  # This firmware rejects RPDO2/TPDO2 over SDO (config download abort 0x06040047),
-  # so everything rides RPDO1/TPDO1 -- the device's native single-PDO layout.
-  # Device mode is set once via the boot SDO above (0x6042), not via a PDO.
   rpdo:
     1:
       enabled: true
       cob_id: "auto"
       transmission: 0xFF
       mapping:
-        - {index: 0x6040, sub_index: 0}  # control word (0x08/09/0B/0F)
-        - {index: 0x6300, sub_index: 1}  # Vpoc set point
+        - {index: 0x6040, sub_index: 0}
+        - {index: 0x6300, sub_index: 1}
   tpdo:
     1:
       enabled: true
       cob_id: "auto"
       transmission: 0xFF
       mapping:
-        - {index: 0x6041, sub_index: 0}  # status word
-        - {index: 0x6301, sub_index: 1}  # Vpoc actual = spool position
+        - {index: 0x6041, sub_index: 0}
+        - {index: 0x6301, sub_index: 1}
+
+mast_pitch:
+  node_id: 17
+  dcf: "PVE_CC.eds"
+  driver: "ros2_canopen::Cia408Driver"
+  package: "canopen_408_driver"
+  period: 10
+  boot: true
+  mandatory: false
+  boot_timeout_ms: 10000
+  vendor_id: 0x01000019
+  product_code: 0x53373235
+  scale_target_to_dev: 163.84
+  scale_actual_from_dev: 0.006103515625
+  offset: 0.0
+  sdo:
+    - {index: 0x1017, sub_index: 0, value: 50}
+    - {index: 0x6042, sub_index: 0, value: 1}
+  rpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6040, sub_index: 0}
+        - {index: 0x6300, sub_index: 1}
+  tpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6041, sub_index: 0}
+        - {index: 0x6301, sub_index: 1}
+
+gantry_x:
+  node_id: 18
+  dcf: "PVE_CC.eds"
+  driver: "ros2_canopen::Cia408Driver"
+  package: "canopen_408_driver"
+  period: 10
+  boot: true
+  mandatory: false
+  boot_timeout_ms: 10000
+  vendor_id: 0x01000019
+  product_code: 0x53373235
+  scale_target_to_dev: 163.84
+  scale_actual_from_dev: 0.006103515625
+  offset: 0.0
+  sdo:
+    - {index: 0x1017, sub_index: 0, value: 50}
+    - {index: 0x6042, sub_index: 0, value: 1}
+  rpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6040, sub_index: 0}
+        - {index: 0x6300, sub_index: 1}
+  tpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6041, sub_index: 0}
+        - {index: 0x6301, sub_index: 1}
+
+gantry_y:
+  node_id: 19
+  dcf: "PVE_CC.eds"
+  driver: "ros2_canopen::Cia408Driver"
+  package: "canopen_408_driver"
+  period: 10
+  boot: true
+  mandatory: false
+  boot_timeout_ms: 10000
+  vendor_id: 0x01000019
+  product_code: 0x53373235
+  scale_target_to_dev: 163.84
+  scale_actual_from_dev: 0.006103515625
+  offset: 0.0
+  sdo:
+    - {index: 0x1017, sub_index: 0, value: 50}
+    - {index: 0x6042, sub_index: 0, value: 1}
+  rpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6040, sub_index: 0}
+        - {index: 0x6300, sub_index: 1}
+  tpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6041, sub_index: 0}
+        - {index: 0x6301, sub_index: 1}
