@@ -132,10 +132,12 @@ bool HydraulicAxis408::set_float()
 
 void HydraulicAxis408::refresh_outputs()
 {
-  if (!enabled_.load()) return;
   std::scoped_lock lock(io_mutex_);
-  // Re-assert control word + set point so the PVED's RPDO time-guard does not
-  // trip (fault "RPDO not received within timeout period").
+  // Stream control word + set point EVERY cycle, even before enable(), so the
+  // PVED's flow-command time-guard (EMCY 0x8003, "flow command not received
+  // within timeout") never trips. Before enable() the control word holds a safe
+  // Disabled state (CW_DISABLED) and the set point is neutral (0); enable()
+  // switches it to CW_ACTIVE and set_setpoint() supplies the command.
   write_controlword(current_cw_.load());
   send_setpoint(last_setpoint_.load());
 }
