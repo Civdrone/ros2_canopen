@@ -124,7 +124,7 @@ ParameterName=Serial Number
 ObjectType=0x07
 DataType=0x0007
 AccessType=ro
-DefaultValue=0x0AD4021C
+DefaultValue=0x00000000
 PDOMapping=0
 
 [OptionalObjects]
