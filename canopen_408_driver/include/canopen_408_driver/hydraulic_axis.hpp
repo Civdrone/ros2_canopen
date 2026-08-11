@@ -82,31 +82,36 @@ public:
   {
   }
 
-  /// Put the device in CAN-controlled mode and step the DSM
-  /// Init -> Disabled -> Hold -> Device_Mode_Active. After this the valve
-  /// follows the set point. Returns true if all commands were accepted.
+  // NOTE: enable()/recover()/disable()/hold() are all NON-BLOCKING. They set the
+  // target DSM phase and return immediately; the actual control-word climb is
+  // driven by spin_once() on the driver's poll timer. This is deliberate: doing
+  // the ~600 ms streamed climb inline would block the shared ROS executor and
+  // stall every other node's services (e.g. set_position timing out).
+
+  /// Request the DSM climb Init -> Disabled -> Hold -> Device_Mode_Active.
+  /// Returns true = accepted (not "reached Active"); watch the status word.
   bool enable();
 
-  /// Bring the DSM to Hold (spool commanded to neutral, no longer controlled).
+  /// Command Hold (spool to neutral, not controlled). Takes effect next cycle.
   bool hold();
 
-  /// Bring the DSM to Disabled.
+  /// Command Disabled. Takes effect next cycle.
   bool disable();
 
-  /// Fault reset (Fault_Hold -> Hold) followed by re-enable.
+  /// Request a fault-reset then the full enable climb.
   bool recover();
 
-  /// Write the spool set point (0x6300:1) via the mapped RPDO. `raw` is clamped
-  /// to +/-SETPOINT_FULL_SCALE unless it is the sentinel float value.
+  /// Set the spool set point (0x6300:1), clamped to +/-SETPOINT_FULL_SCALE unless
+  /// it is the sentinel float value. Streamed to the device by spin_once().
   bool set_setpoint(int16_t raw);
 
   /// Command the float state (set point = SETPOINT_FLOAT).
   bool set_float();
 
-  /// Re-transmit the current control word + set point. Call periodically so the
-  /// device's RPDO time-guard does not trip (fault: "RPDO not received within
-  /// timeout"). No-op until enable() has run.
-  void refresh_outputs();
+  /// Advance the DSM phase (if climbing) and stream the current control word +
+  /// set point once. Must be called every poll cycle. Non-blocking; keeps the
+  /// device's flow-command time-guard fed and steps the climb over time.
+  void spin_once();
 
   /// Persist the current parameters to EEPROM (write "save" to 0x1010:1).
   bool save_to_eeprom();
@@ -119,14 +124,19 @@ public:
   bool is_enabled() const { return enabled_.load(); }
 
 private:
+  // DSM climb phases driven by spin_once(). Idle = hold current_cw_ steady.
+  enum class Phase : uint8_t { Idle, FaultReset, Init, Disabled, Hold, Active };
+
   bool write_controlword(uint16_t value);
-  bool set_device_mode(uint8_t mode);
   bool send_setpoint(int16_t raw);
+  void advance_phase_locked();  // caller holds io_mutex_
 
   std::shared_ptr<LelyDriverBridge> driver_;
   std::atomic<bool> enabled_{false};
-  std::atomic<uint16_t> current_cw_{CW_DISABLED};
+  std::atomic<uint16_t> current_cw_{CW_DISABLED};  // control word streamed every cycle
   std::atomic<int16_t> last_setpoint_{0};
+  std::atomic<Phase> phase_{Phase::Idle};
+  int phase_ticks_{0};          // guarded by io_mutex_
   mutable std::mutex io_mutex_;
 };
 

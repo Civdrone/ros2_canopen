@@ -180,8 +180,8 @@ template <class NODETYPE>
 void NodeCanopen408Driver<NODETYPE>::poll_timer_callback()
 {
   NodeCanopenProxyDriver<NODETYPE>::poll_timer_callback();
-  // Keep the PVED's RPDO time-guard fed while enabled.
-  if (axis_) axis_->refresh_outputs();
+  // Advance the (non-blocking) DSM climb and stream control word + set point.
+  if (axis_) axis_->spin_once();
   publish();
 }
 
