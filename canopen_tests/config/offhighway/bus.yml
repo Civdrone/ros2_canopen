@@ -76,8 +76,9 @@ mast_roll:
   scale_target_to_dev: 163.84
   scale_actual_from_dev: 0.006103515625
   offset: 0.0
-  # Output topic name overrides (defaults shown). Uncomment/edit to rename.
-  # fault_topic: "~/fault"                     # decoded EMCY faults (std_msgs/String)
+  # Topic name overrides (defaults shown). Uncomment/edit to rename.
+  # target_topic: "~/target"                   # INPUT: stream setpoint % here (std_msgs/Float64)
+  # fault_topic: "~/fault"                      # decoded EMCY faults (std_msgs/String)
   # spool_position_topic: "~/spool_position"
   # status_word_topic: "~/status_word"
   # demand_topic: "~/demand"
@@ -116,8 +117,9 @@ mast_pitch:
   scale_target_to_dev: 163.84
   scale_actual_from_dev: 0.006103515625
   offset: 0.0
-  # Output topic name overrides (defaults shown). Uncomment/edit to rename.
-  # fault_topic: "~/fault"                     # decoded EMCY faults (std_msgs/String)
+  # Topic name overrides (defaults shown). Uncomment/edit to rename.
+  # target_topic: "~/target"                   # INPUT: stream setpoint % here (std_msgs/Float64)
+  # fault_topic: "~/fault"                      # decoded EMCY faults (std_msgs/String)
   # spool_position_topic: "~/spool_position"
   # status_word_topic: "~/status_word"
   # demand_topic: "~/demand"
@@ -156,8 +158,9 @@ gantry_x:
   scale_target_to_dev: 163.84
   scale_actual_from_dev: 0.006103515625
   offset: 0.0
-  # Output topic name overrides (defaults shown). Uncomment/edit to rename.
-  # fault_topic: "~/fault"                     # decoded EMCY faults (std_msgs/String)
+  # Topic name overrides (defaults shown). Uncomment/edit to rename.
+  # target_topic: "~/target"                   # INPUT: stream setpoint % here (std_msgs/Float64)
+  # fault_topic: "~/fault"                      # decoded EMCY faults (std_msgs/String)
   # spool_position_topic: "~/spool_position"
   # status_word_topic: "~/status_word"
   # demand_topic: "~/demand"
@@ -196,8 +199,9 @@ gantry_y:
   scale_target_to_dev: 163.84
   scale_actual_from_dev: 0.006103515625
   offset: 0.0
-  # Output topic name overrides (defaults shown). Uncomment/edit to rename.
-  # fault_topic: "~/fault"                     # decoded EMCY faults (std_msgs/String)
+  # Topic name overrides (defaults shown). Uncomment/edit to rename.
+  # target_topic: "~/target"                   # INPUT: stream setpoint % here (std_msgs/Float64)
+  # fault_topic: "~/fault"                      # decoded EMCY faults (std_msgs/String)
   # spool_position_topic: "~/spool_position"
   # status_word_topic: "~/status_word"
   # demand_topic: "~/demand"

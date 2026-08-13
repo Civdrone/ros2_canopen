@@ -22,7 +22,8 @@ NodeCanopen408Driver<NODETYPE>::NodeCanopen408Driver(NODETYPE * node)
   demand_topic_("~/demand"),
   status_word_topic_("~/status_word"),
   pcb_temperature_topic_("~/pcb_temperature"),
-  fault_topic_("~/fault")
+  fault_topic_("~/fault"),
+  target_topic_("~/target")
 {
 }
 
@@ -93,6 +94,8 @@ void NodeCanopen408Driver<NODETYPE>::configure_common()
   catch (...) {}
   try { fault_topic_ = this->config_["fault_topic"].template as<std::string>(); }
   catch (...) {}
+  try { target_topic_ = this->config_["target_topic"].template as<std::string>(); }
+  catch (...) {}
 
   spool_position_publisher_ =
     this->node_->template create_publisher<std_msgs::msg::Float64>(spool_position_topic_, 10);
@@ -154,6 +157,13 @@ void NodeCanopen408Driver<NODETYPE>::configure_common()
         const canopen_interfaces::srv::COTargetDouble::Request::SharedPtr req,
         canopen_interfaces::srv::COTargetDouble::Response::SharedPtr resp)
       { resp->success = this->set_position(req->target); });
+
+  // Streaming setpoint: percent on ~/target -> spool, applied immediately.
+  // KeepLast(1) so a backlog can't queue stale setpoints if the executor stalls;
+  // only the newest command is ever applied.
+  target_subscription_ = this->node_->template create_subscription<std_msgs::msg::Float64>(
+    target_topic_, rclcpp::QoS(1),
+    [this](const std_msgs::msg::Float64::SharedPtr msg) { this->set_position(msg->data); });
 
   RCLCPP_INFO(
     this->node_->get_logger(),
