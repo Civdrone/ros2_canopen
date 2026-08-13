@@ -9,6 +9,7 @@
 #include "canopen_interfaces/srv/co_target_double.hpp"
 #include "canopen_proxy_driver/node_interfaces/node_canopen_proxy_driver.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/u_int16.hpp"
 #include "std_srvs/srv/trigger.hpp"
 
@@ -33,6 +34,7 @@ protected:
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr demand_publisher_;          // percent
   rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr statusword_publisher_;
   rclcpp::Publisher<std_msgs::msg::UInt16>::SharedPtr temperature_publisher_;      // raw
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr fault_publisher_;            // decoded EMCY
 
   // Command services.
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr enable_service_;
@@ -50,9 +52,17 @@ protected:
   double offset_;
   int16_t float_setpoint_raw_;
 
+  // Output topic names (overridable per node in bus.yml).
+  std::string spool_position_topic_;
+  std::string demand_topic_;
+  std::string status_word_topic_;
+  std::string pcb_temperature_topic_;
+  std::string fault_topic_;
+
   void configure_common();
   void publish();
   void poll_timer_callback() override;
+  void on_emcy(ros2_canopen::COEmcy emcy) override;  // decode + publish faults
 
 public:
   explicit NodeCanopen408Driver(NODETYPE * node);
