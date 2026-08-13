@@ -9,7 +9,9 @@
 # namespace, e.g. /mast_roll/spool_position).
 #
 # Node-ID map:  master=1, inclinometer=127,
-#               mast_pitch=16, mast_roll=18, gantry_x=19, gantry_y=20
+#               mast_pitch=16, mast_roll=18, gantry_x=21, gantry_y=20
+#   (gantry_x commissioned to 21, not 19; re-run commission_pved_nodeid.sh to
+#    move it to 19 if you want contiguous IDs.)
 # All PVEDs ship at node 16 -- assign unique IDs one at a time with
 # canopen_408_driver/scripts/commission_pved_nodeid.sh BEFORE bussing them together.
 #
@@ -74,6 +76,12 @@ mast_roll:
   scale_target_to_dev: 163.84
   scale_actual_from_dev: 0.006103515625
   offset: 0.0
+  # Output topic name overrides (defaults shown). Uncomment/edit to rename.
+  # fault_topic: "~/fault"                     # decoded EMCY faults (std_msgs/String)
+  # spool_position_topic: "~/spool_position"
+  # status_word_topic: "~/status_word"
+  # demand_topic: "~/demand"
+  # pcb_temperature_topic: "~/pcb_temperature"
   sdo:
     - {index: 0x1017, sub_index: 0, value: 50}
     - {index: 0x6042, sub_index: 0, value: 1}
@@ -108,6 +116,12 @@ mast_pitch:
   scale_target_to_dev: 163.84
   scale_actual_from_dev: 0.006103515625
   offset: 0.0
+  # Output topic name overrides (defaults shown). Uncomment/edit to rename.
+  # fault_topic: "~/fault"                     # decoded EMCY faults (std_msgs/String)
+  # spool_position_topic: "~/spool_position"
+  # status_word_topic: "~/status_word"
+  # demand_topic: "~/demand"
+  # pcb_temperature_topic: "~/pcb_temperature"
   sdo:
     - {index: 0x1017, sub_index: 0, value: 50}
     - {index: 0x6042, sub_index: 0, value: 1}
@@ -129,7 +143,7 @@ mast_pitch:
         - {index: 0x6301, sub_index: 1}
 
 gantry_x:
-  node_id: 19
+  node_id: 21
   dcf: "PVE_CC.eds"
   driver: "ros2_canopen::Cia408Driver"
   package: "canopen_408_driver"
@@ -142,6 +156,12 @@ gantry_x:
   scale_target_to_dev: 163.84
   scale_actual_from_dev: 0.006103515625
   offset: 0.0
+  # Output topic name overrides (defaults shown). Uncomment/edit to rename.
+  # fault_topic: "~/fault"                     # decoded EMCY faults (std_msgs/String)
+  # spool_position_topic: "~/spool_position"
+  # status_word_topic: "~/status_word"
+  # demand_topic: "~/demand"
+  # pcb_temperature_topic: "~/pcb_temperature"
   sdo:
     - {index: 0x1017, sub_index: 0, value: 50}
     - {index: 0x6042, sub_index: 0, value: 1}
@@ -176,6 +196,12 @@ gantry_y:
   scale_target_to_dev: 163.84
   scale_actual_from_dev: 0.006103515625
   offset: 0.0
+  # Output topic name overrides (defaults shown). Uncomment/edit to rename.
+  # fault_topic: "~/fault"                     # decoded EMCY faults (std_msgs/String)
+  # spool_position_topic: "~/spool_position"
+  # status_word_topic: "~/status_word"
+  # demand_topic: "~/demand"
+  # pcb_temperature_topic: "~/pcb_temperature"
   sdo:
     - {index: 0x1017, sub_index: 0, value: 50}
     - {index: 0x6042, sub_index: 0, value: 1}
