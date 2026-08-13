@@ -14,12 +14,14 @@ class Cia408Driver : public ros2_canopen::CanopenDriver
 public:
   explicit Cia408Driver(rclcpp::NodeOptions node_options = rclcpp::NodeOptions());
 
-  bool init_axis() { return impl_->init_axis(); }
-  bool halt_axis() { return impl_->halt_axis(); }
+  bool enable_axis() { return impl_->enable_axis(); }
+  bool disable_axis() { return impl_->disable_axis(); }
+  bool hold_axis() { return impl_->hold_axis(); }
   bool recover_axis() { return impl_->recover_axis(); }
-  bool shutdown_axis() { return impl_->shutdown_axis(); }
-  bool set_target(double t) { return impl_->set_target(t); }
-  double get_actual() const { return impl_->get_actual(); }
+  bool float_axis() { return impl_->float_axis(); }
+  bool save_axis() { return impl_->save_axis(); }
+  bool set_position(double percent) { return impl_->set_position(percent); }
+  double get_spool_position() const { return impl_->get_spool_position(); }
 };
 
 }  // namespace ros2_canopen

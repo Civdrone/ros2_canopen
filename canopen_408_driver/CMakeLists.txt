@@ -87,6 +87,11 @@ install(
 )
 
 install(
+  DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(
   TARGETS lifecycle_cia408_driver cia408_driver node_canopen_cia408_driver hydraulic_axis_bridge
   EXPORT export_${PROJECT_NAME}
   ARCHIVE DESTINATION lib
