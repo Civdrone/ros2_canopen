@@ -45,6 +45,10 @@ protected:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_service_;
   rclcpp::Service<canopen_interfaces::srv::COTargetDouble>::SharedPtr set_position_service_;
 
+  // Streaming setpoint input: publish percent here to command the spool at high
+  // rate (lighter than the service). Applied immediately via the RPDO path.
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr target_subscription_;
+
   // Scale: setpoint_raw = (position_percent - offset) * scale_to_dev
   //        position_percent = actual_raw * scale_from_dev + offset
   double scale_to_dev_;
@@ -58,6 +62,7 @@ protected:
   std::string status_word_topic_;
   std::string pcb_temperature_topic_;
   std::string fault_topic_;
+  std::string target_topic_;   // streaming setpoint input (percent)
 
   void configure_common();
   void publish();
