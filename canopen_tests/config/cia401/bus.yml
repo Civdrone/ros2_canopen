@@ -1,0 +1,150 @@
+# IMET M880 CANopen radio remote control receiver (CiA 401, generic I/O).
+#
+# Device: IMET S.r.l. M880 CANopen
+#   vendor_id    0x000004FA
+#   product_code 0x4D383830 ("M880")
+#   revision     0x00040000
+#   device type  0x00830191  -> profile 401, digital input + digital output
+#
+# The EDS shipped here is CANOpen_STD_AllCmd_0x0A_250kbps_12rpdo_RXP4.eds,
+# which is pre-configured for node-ID 0x0A (10) at 250 kbit/s.
+#
+# Stock PDO layout (all async, transmission type 255, 80 ms event timer):
+#   TPDO1  0x180+ID   0x2021:01..08   analog CH1..CH8
+#   TPDO2  0x280+ID   0x6000:01..07 + 0x6000:11
+#   TPDO3  0x380+ID   0x2021:09..10   analog CH9..CH16
+#   TPDO4  0x480+ID   0x6000:08..0F
+#   TPDO5-8            disabled
+#   RPDO1-3  0x200+ID / 0x300+ID / 0x400+ID   0x2302:01..18  display chars
+#   RPDO4-10 0x50A,0x20B,0x30B,0x40B,0x50B,0x20C,0x30C  0x2302:19..50
+#   RPDO11   0x40C      0x6200:01..08   digital outputs Dig_1..64
+#   RPDO12   0x50C      0x6200:09..10   digital outputs Dig_65..128
+#
+# The RPDO4-12 COB-IDs are hardcoded, not $NODEID-relative: they occupy the
+# default RPDO ranges of node-IDs 10, 11 and 12. Keep node-IDs 11 and 12 free
+# on any bus this device joins.
+#
+# NOT SAFETY RATED. The M880 publishes STOP and Safety EN as SRDOs, cross-
+# checked against inverted mirrors in 0x2120/0x2121 plus a frame counter.
+# Neither ros2_canopen nor the Lely build used here implements SRDO, so the
+# estop topic produced by this driver is derived from ordinary PDO traffic
+# with none of that validation. The hardware safety chain stays authoritative.
+#
+# Generate master.dcf / master.bin with:
+#   cd <this directory> && dcfgen -v -rS bus.yml
+options:
+  dcf_path: "@BUS_CONFIG_PATH@"
+
+master:
+  node_id: 1
+  baudrate: 250
+  driver: "ros2_canopen::MasterDriver"
+  package: "canopen_master_driver"
+  sync_period: 10000
+
+remote_control:
+  node_id: 10
+  dcf: "CANOpen_STD_AllCmd_0x0A_250kbps_12rpdo_RXP4.eds"
+  driver: "ros2_canopen::Cia401Driver"
+  package: "canopen_401_driver"
+  period: 20
+  boot: true
+  mandatory: false
+  vendor_id: 0x000004FA
+  product_code: 0x4D383830
+  frame_id: "m880_remote"
+  joy_topic: "~/joy"
+  estop_topic: "~/estop_not_safety_rated"
+
+  # Sub-indices of 0x6000 to read each cycle. Must stay within what the TPDOs
+  # actually deliver -- an unmapped entry silently degrades to a blocking SDO
+  # read on every poll. The default below is the stock TPDO2 + TPDO4 set.
+  polled_digital_subs: [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
+                        0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x11]
+
+  # Proportional channels, read as UNSIGNED8 from 0x2021. `channel` is the
+  # sub-index (CH1 == 1). Rest position is 0x80; widen `deadband` once the
+  # real joystick rest spread is measured on hardware.
+  #
+  # Listed as 8 because the EDS defines exactly 8 analog setup objects
+  # (0x2320..0x2327, Ain0..Ain7). TPDO1+TPDO3 carry CH1..CH16, so extend this
+  # list if the project file turns out to use the upper channels. Omitting the
+  # list entirely makes the driver publish all 16.
+  axes:
+    - {channel: 1, center: 0x80, deadband: 4}
+    - {channel: 2, center: 0x80, deadband: 4}
+    - {channel: 3, center: 0x80, deadband: 4}
+    - {channel: 4, center: 0x80, deadband: 4}
+    - {channel: 5, center: 0x80, deadband: 4}
+    - {channel: 6, center: 0x80, deadband: 4}
+    - {channel: 7, center: 0x80, deadband: 4}
+    - {channel: 8, center: 0x80, deadband: 4}
+
+  # TODO(CRD-3329): populate from the IMET project file once the button map is
+  # known. Until then the driver auto-expands every polled 0x6000 byte into 8
+  # buttons, so Joy.buttons[i] is the i-th bit of the concatenated polled bytes.
+  #
+  # buttons:
+  #   - {sub: 0x01, bit: 0}   # input 01h
+  #   - {sub: 0x01, bit: 1}   # input 02h
+
+  # TODO(CRD-3329): confirm against the project file before enabling. 0x2020 is
+  # SRDO-mapped, not TPDO-mapped, so reading it costs an SDO per poll unless a
+  # spare TPDO is remapped onto it. Prefer the 0x6000 mirror if the project
+  # exposes STOP there.
+  #
+  # estop: {index: 0x2020, sub: 0x13, bit: 0, active_low: true}
+
+  tpdo:
+    1:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x2021, sub_index: 1}
+        - {index: 0x2021, sub_index: 2}
+        - {index: 0x2021, sub_index: 3}
+        - {index: 0x2021, sub_index: 4}
+        - {index: 0x2021, sub_index: 5}
+        - {index: 0x2021, sub_index: 6}
+        - {index: 0x2021, sub_index: 7}
+        - {index: 0x2021, sub_index: 8}
+    2:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6000, sub_index: 1}
+        - {index: 0x6000, sub_index: 2}
+        - {index: 0x6000, sub_index: 3}
+        - {index: 0x6000, sub_index: 4}
+        - {index: 0x6000, sub_index: 5}
+        - {index: 0x6000, sub_index: 6}
+        - {index: 0x6000, sub_index: 7}
+        - {index: 0x6000, sub_index: 17}
+    3:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x2021, sub_index: 9}
+        - {index: 0x2021, sub_index: 10}
+        - {index: 0x2021, sub_index: 11}
+        - {index: 0x2021, sub_index: 12}
+        - {index: 0x2021, sub_index: 13}
+        - {index: 0x2021, sub_index: 14}
+        - {index: 0x2021, sub_index: 15}
+        - {index: 0x2021, sub_index: 16}
+    4:
+      enabled: true
+      cob_id: "auto"
+      transmission: 0xFF
+      mapping:
+        - {index: 0x6000, sub_index: 8}
+        - {index: 0x6000, sub_index: 9}
+        - {index: 0x6000, sub_index: 10}
+        - {index: 0x6000, sub_index: 11}
+        - {index: 0x6000, sub_index: 12}
+        - {index: 0x6000, sub_index: 13}
+        - {index: 0x6000, sub_index: 14}
+        - {index: 0x6000, sub_index: 15}
